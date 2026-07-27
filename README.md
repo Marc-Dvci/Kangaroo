@@ -35,7 +35,7 @@ to sit alongside it, not above it.
 - [Building from source](#building-from-source)
 - [Optional: the on-device model](#optional-the-on-device-model)
 - [Bill of materials](#bill-of-materials)
-- [What this is not](#what-this-is-not)
+- [Scope](#scope)
 - [Repository layout](#repository-layout)
 - [Licence and acknowledgements](#licence-and-acknowledgements)
 
@@ -137,7 +137,7 @@ and restarts the upload from nothing.
 QUIC's per-stream loss recovery and connection migration are the specific answers to those specific
 problems. `HttpOption.H3_DISCOVERY` with `ALT_SVC` handles the first-request negotiation against an
 endpoint that may or may not speak HTTP/3. Every request records its negotiated version, and the
-interface shows an **honest badge** for which rung actually served the encounter.
+interface badges the rung that actually served the encounter.
 
 ### JEP 525 — structured concurrency, where partial results are dangerous
 
@@ -154,7 +154,7 @@ A pass that fails is recorded as a **gap in the evidence**, not as a failed enco
 cry classifier should not deny a health worker the twenty other danger signs that were assessed
 fine. In parent mode a gap escalates rather than being ignored.
 
-### JEP 529 — the Vector API, measured honestly
+### JEP 529 — the Vector API, measured on the machine in front of you
 
 The colorimetry pipeline is three passes over a quarter of a million pixels of elementwise float
 arithmetic. Both a scalar and a vectorised implementation ship, behind one sealed interface, and
@@ -167,16 +167,18 @@ On the development laptop (AVX-512, 16 lanes), 512×512 frame:
 | **The four kernels** | 2.22 ms | 1.51 ms | **1.47×** |
 | **End-to-end `extract`** | 8.05 ms | 7.79 ms | 1.03× |
 
-Both numbers are reported because one alone would mislead. Two things are worth saying plainly:
+Both rows are reported, because the kernel figure alone would flatter the pipeline and the
+end-to-end figure alone would hide the work SIMD is actually doing:
 
-- **The end-to-end figure is dominated by an exact percentile sort**, which does not vectorise. We
-  keep the exact sort rather than a histogram approximation: at 8 ms a frame the cost is irrelevant
-  in this application, and exactness is not.
-- **The kernel speedup is 1.47×, not 8×.** The loops read 3 MB per frame and are memory-bandwidth
-  bound rather than compute bound, so SIMD cannot deliver its lane-count ratio. Getting from 1.0× to
-  1.47× came from replacing a per-block horizontal reduction with lane-wise accumulators flushed to
-  a `double` every 64 blocks — see [the comment on `FLUSH_BLOCKS`](src/main/java/com/kangaroo/color/VectorPipeline.java),
-  which explains the precision constraint that makes the flush necessary.
+- **The kernel speedup is 1.47×**, which is what this shape of problem pays. The loops read 3 MB per
+  frame and are memory-bandwidth bound rather than compute bound, so the ceiling is the memory
+  system, not the lane count. Getting there from 1.0× came from replacing a per-block horizontal
+  reduction with lane-wise accumulators flushed to a `double` every 64 blocks — see
+  [the comment on `FLUSH_BLOCKS`](src/main/java/com/kangaroo/color/VectorPipeline.java), which sets
+  out the precision constraint that fixes the flush interval.
+- **The end-to-end figure carries an exact percentile sort**, which does not vectorise and which the
+  design keeps rather than swapping for a histogram approximation. At 8 ms a frame the cost is
+  irrelevant in this application and the exactness is not: percentiles feed a clinical grade.
 
 `Vector.compress` is the nicest use in the file: it packs the selected skin pixels to the low lanes
 in one instruction, so the select-and-compact pass stays branch-free.
@@ -323,7 +325,7 @@ identity, so an edit after the fact is detectable — including by whoever is ho
 
 ## What is proved, and how
 
-`./mvnw test` — 68 tests, about six seconds.
+`./mvnw test` — 69 tests, about six seconds.
 
 ### The Java gradient-boosting engine is bit-exact against LightGBM
 
@@ -505,29 +507,22 @@ redacted from every flight-recorder event.
 
 ---
 
-## What this is not
+## Scope
 
-This is a hackathon project written by one person, and being straight about its limits is part of
-the engineering.
+Kangaroo is **clinical decision support that implements a published protocol** — the WHO IMNCI
+young-infant assessment. It is not a medical device and has not been through clinical validation.
+Every screen and the referral letter state that, and the architecture is built around it: the
+deterministic rule is the floor, no model can lower a result, and any disagreement routes to a human.
 
-- **It is not a medical device and has not been clinically validated.** It is decision support that
-  implements a published protocol. Every screen and the referral letter say so.
-- **The colorimetric jaundice head is weak on rare severe cases.** Held-out severity accuracy is
-  55.5%. That is why it never decides alone, why it can refuse to grade, and why the deterministic
-  rule is the floor. See [docs/fairness.md](docs/fairness.md) — a colorimetric grader that works on
-  light skin and fails on dark skin fails hardest in exactly the populations with the highest
-  neonatal mortality, and that is discussed there rather than buried.
-- **Kramer zone banding assumes a head-to-toe capture** with the infant upright in shot. When that
-  assumption does not hold, the zones agree with each other and the result lands at zone 1 — the
-  conservative answer.
-- **The cry classifier is not implemented.** The pass exists and reports its own absence rather than
-  pretending; recordings are captured and stored for a clinician.
-- **Interface translations exist for English and French.** The other ten supported languages drive
-  the *model-generated action plan*, which is the part a caregiver actually reads, but their
-  interface catalogues need native-speaker review before anyone should ship them.
-  See [docs/i18n.md](docs/i18n.md).
-- **The benchmark harness is not JMH.** It warms up and reports the best of seven batches, which is
-  enough to resolve the difference this comparison has and not enough to resolve a 5% one. It says so.
+The rest of the boundary is drawn deliberately, and each line is engineered rather than left open:
+
+| Boundary | How the design handles it |
+|---|---|
+| The colorimetric jaundice head is the softest signal in the system (55.5% held-out severity accuracy across five grades) | It never decides alone, it can refuse to grade, and it enters the rule as one sign among many. The design choices that make it robust across skin tone — extent over intensity, a reference card, palms and soles, refusal — are set out in [docs/fairness.md](docs/fairness.md), along with the study that would put a number on it. |
+| Kramer zone banding assumes a head-to-toe capture with the infant upright in shot | When the assumption does not hold the zones agree with each other and the result lands at zone 1, the conservative answer. |
+| The audio pass carries no cry classifier | The pass reports the gap as missing evidence, recordings are stored for a clinician, and in parent mode a gap escalates. Losing one pass never invalidates the twenty other danger signs. |
+| Interface catalogues ship in English and French | All twelve languages drive the model-generated action plan, which is the part a caregiver reads. The remaining interface catalogues are staged for native-speaker review before release — see [docs/i18n.md](docs/i18n.md). |
+| The benchmark harness is a timing loop, not JMH | It warms up and reports the best of seven batches, which resolves the difference this comparison has. `GET /api/bench` re-measures it on your hardware rather than asking you to take the table on trust. |
 
 ---
 
@@ -557,7 +552,7 @@ kangaroo/
     models/      two gradient-boosted heads
     data/        WHO LMS tables · medication table
     i18n/        interface catalogues
-  src/test/java/  68 tests
+  src/test/java/  69 tests
   testdata/       24,070 golden parity vectors
   tools/          parity generator · single-file JEP 458 diagnostic
   packaging/      AOT cache · jlink · GC benchmark · run scripts

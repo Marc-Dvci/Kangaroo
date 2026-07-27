@@ -21,10 +21,10 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest, ubuntu-24.04-arm]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up JDK 26
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '26'
@@ -94,8 +94,8 @@ jobs:
     name: no runtime dependencies
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '26'
@@ -104,8 +104,28 @@ jobs:
       # The claim is "zero runtime dependencies -- the JDK is the whole stack". The enforcer rule in
       # the pom asserts it, and this makes the assertion visible as its own check rather than a line
       # buried in a build log.
-      - name: Assert the runtime dependency set is empty
+      # A fresh clone has to be runnable as-is. Every Unix runner and every reader following the
+      # README invokes these directly, so the executable bit is part of the build contract.
+      - name: The wrapper and the packaging scripts are executable
+        shell: bash
         run: |
+          status=0
+          for f in mvnw packaging/*.sh; do
+            if [ -x "$f" ]; then
+              echo "  ok  $f"
+            else
+              echo "::error file=$f::not executable in the repository (git update-index --chmod=+x $f)"
+              status=1
+            fi
+          done
+          exit $status
+
+      - name: Assert the runtime dependency set is empty
+        # pipefail matters here: without it the exit status of the pipeline is tee's, and a Maven
+        # failure would be reported as a passing check.
+        shell: bash
+        run: |
+          set -o pipefail
           ./mvnw -B dependency:tree -Dscope=runtime | tee tree.txt
           if grep -qE "^\[INFO\] [+\\\\]- " tree.txt; then
             echo "::error::a runtime dependency has crept in"

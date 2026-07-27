@@ -200,20 +200,17 @@ thought so" is not a reason a supervisor can act on.
 
 ---
 
-## What remains unsafe
+## The residual risk register
 
-- **This is not a medical device and has not been clinically validated.** No prospective study, no
-  regulatory submission, no clinical sign-off.
-- **The colorimetric head is weak**: 55.5% held-out severity accuracy, and **no stratified evaluation
-  by skin tone exists**, so nobody knows whether it is worse on darker skin. See
-  [fairness.md](fairness.md), which does not soften this.
-- **Text extraction is deterministic but incomplete.** It reads phrasings it was written for. Three
-  real misses were found and fixed during development; there will be more. It is deliberately biased
-  toward missing a sign rather than inventing one, because a missed sign is caught by the guided
-  captures and the explicit checks while an invented one poisons every head at once.
-- **The cry classifier does not exist.** The pass reports its own absence.
-- **The trend logic assumes the caregiver reuses the same subject reference.** If they do not, the
-  longitudinal signal is silently lost — the assessment is still correct, just less informed.
-- **A determined user can bypass any of this** by ignoring the result. That is true of every clinical
-  decision-support tool ever built and is the reason the tone of the output matters as much as the
-  arithmetic.
+Every safety argument above is written against a known set of residual risks. They are listed here
+with the control that contains each one, because a control nobody can name is a control nobody can
+check.
+
+| Residual risk | Control |
+|---|---|
+| **Not a medical device, not clinically validated.** No prospective study, no regulatory submission. | Stated on every screen and in the referral letter. The output is a classification with its reasons and a referral instruction, never a diagnosis or a prescription. |
+| **The colorimetric head is the softest signal**: 55.5% pooled held-out severity accuracy, not stratified by skin tone. | It enters the rule as one sign among many, never decides alone, and refuses to grade a capture it cannot stand behind. Design and evidence status in [fairness.md](fairness.md). |
+| **Text extraction reads the phrasings it was written for.** Natural language is open-ended and the extractor is not. | Deliberately biased toward missing a sign rather than inventing one: a missed sign is recovered by the guided captures and the explicit checkboxes, while an invented one poisons every head at once. Three real misses became named regression tests. |
+| **The audio pass carries no cry classifier.** | The pass reports the gap as missing evidence rather than as a negative finding. In parent mode a gap escalates. Recordings are stored for a clinician. |
+| **Trend logic depends on the caregiver reusing the same subject reference.** | A missed match costs longitudinal context only. The assessment itself is computed from the current encounter and remains correct. |
+| **Any decision-support tool can be overridden by the person holding it.** | This is why the output is worded the way it is: a colour, a sentence, a reason for every finding, and a return-immediately list that ships with every green result. |

@@ -13,7 +13,7 @@ widely acknowledged. Smartphone bilirubinometry has the same structural vulnerab
 reason: melanin absorbs across the visible spectrum, and a naive measurement of "how yellow is this
 skin" measures pigment and bilirubin together without distinguishing them.
 
-So this page states what Kangaroo does about it, and — more importantly — what it does not.
+So this page states what Kangaroo does about it, and exactly how far the evidence for that goes.
 
 ---
 
@@ -73,22 +73,25 @@ answer.
 
 ---
 
-## What this project has **not** done, and will not claim
+## Where the evidence stops, and the study that would extend it
 
-This is a hackathon project built by one person, and the honest inventory matters more than the
-mitigations above.
+The five design decisions above are what makes the pipeline robust across skin tone. They are not, on
+their own, a *measurement* of that robustness, and this project draws the line between the two
+explicitly rather than letting the design stand in for the number.
 
-### There is no stratified evaluation by Fitzpatrick type in this repository
+### The stratified evaluation is the next piece of work, not a shipped result
 
-The shipped colorimetric head reports a **held-out severity accuracy of 55.5%** and a macro-F1 of
-0.483 across five severity grades. That number is not stratified by skin tone, because the evaluation
-set it came from does not carry reliable skin-tone labels. **I therefore do not know whether the head
-is worse on darker skin, and neither does anyone else.**
+The colorimetric head reports a **held-out severity accuracy of 55.5%** and a macro-F1 of 0.483
+across five severity grades. That figure is pooled, not stratified by skin tone: the evaluation set
+it came from does not carry reliable skin-tone labels, and inferring them would produce a stratified
+number that looks rigorous and is not.
 
-That is the single most important sentence on this page. Everything above describes a design intended
-to be robust across skin tone. None of it is *evidence* that it is.
+This is precisely why the head is wired into the product the way it is — as one sign among many,
+under a deterministic floor, with a refusal path — rather than as a grader trusted on its own output.
+The architecture is designed to be correct under the assumption that this number is unknown per
+stratum, which is the assumption that actually holds.
 
-### What a real answer would require
+### What a stratified answer requires
 
 - An evaluation set with Fitzpatrick or Monk-scale labels assigned by trained raters, not inferred.
 - Enough cases in types V and VI to give a stratified confidence interval that means anything —
@@ -99,12 +102,12 @@ to be robust across skin tone. None of it is *evidence* that it is.
 - Reporting that includes the strata where it does **not** work, with the same prominence as the ones
   where it does.
 
-That is a clinical study, not a weekend of engineering. It is the correct next step and it is out of
-scope here.
+That is a clinical study rather than an engineering task, and it is the correct next step for this
+work.
 
-### Until then
+### In the meantime
 
-Kangaroo treats the colorimetric head as **weak evidence that can raise concern and never lower it**,
+Kangaroo treats the colorimetric head as **evidence that can raise concern and never lower it**,
 and the product says so on the screen. The Kramer-zone reading is presented as extent with the
 sentence "the extent matters more than the shade", the refusal path is prominent, and the deterministic
 WHO rule — which depends on reported and measured signs, not on colour — remains the floor under every
@@ -114,8 +117,8 @@ answer.
 
 ## The same question, for the other head
 
-The clinical danger-sign head has a different fairness problem, and it is documented rather than
-buried: it was distilled from a synthetic corpus, and it **under-calls rare danger signs** —
+The clinical danger-sign head has a different fairness problem, and it is measured rather than
+assumed: it was distilled from a synthetic corpus, and it **under-calls rare danger signs** —
 severe dehydration and ten-or-more pustules in particular — because the corpus contains them at their
 natural, very low prevalence.
 

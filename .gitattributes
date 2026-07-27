@@ -1,0 +1,20 @@
+# Kangaroo is built and run on Linux, macOS and Windows from the same clone, so the line endings of
+# the things a shell executes are part of the build contract rather than a preference. A CRLF in a
+# shebang line is a "bad interpreter" error on every Unix runner.
+
+* text=auto eol=lf
+
+mvnw        text eol=lf
+mvnw.cmd    text eol=crlf
+*.sh        text eol=lf
+*.cmd       text eol=crlf
+*.bat       text eol=crlf
+*.ps1       text eol=crlf
+
+# Golden parity vectors: byte-for-byte comparison against LightGBM output, never normalised.
+testdata/*.tsv  -text
+
+*.svg       text eol=lf
+*.jar       binary
+*.gguf      binary
+*.aot       binary
