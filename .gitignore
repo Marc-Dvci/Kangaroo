@@ -26,3 +26,7 @@ runtime/
 *.dll
 *.so
 *.dylib
+
+# A JDK fetched by packaging/fetch-jdk26.sh for local builds.
+.jdk/
+.jdk-download/

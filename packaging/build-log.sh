@@ -12,11 +12,20 @@ set -uo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$root"
 
-toolchain="$(dirname "$root")/.toolchain"
-if [ -d "$toolchain/jdk-26.0.1+8" ]; then
-  export JAVA_HOME="$toolchain/jdk-26.0.1+8"
-  export PATH="$JAVA_HOME/bin:$PATH"
-fi
+# Pick a JDK 26 deliberately rather than inheriting whatever JAVA_HOME happens to say. These
+# scripts once ran silently against the system's JDK 17 and produced baffling errors from tools
+# that had simply never heard of the flags being passed.
+#
+# Order: a JDK fetched by packaging/fetch-jdk26.sh, then a pinned development toolchain beside the
+# repository, then whatever is already on PATH (which the pom's enforcer will reject if it is too
+# old, with a clear message).
+for candidate in "$root/.jdk" "$(dirname "$root")/.toolchain/jdk-26.0.1+8"; do
+  if [ -x "$candidate/bin/java" ]; then
+    export JAVA_HOME="$candidate"
+    export PATH="$JAVA_HOME/bin:$PATH"
+    break
+  fi
+done
 
 log="$root/build.log"
 
