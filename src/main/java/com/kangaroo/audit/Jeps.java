@@ -93,7 +93,7 @@ public final class Jeps {
 
             new Use(500, "Prepare to Make Final Mean Final", "Final",
                     "pom.xml, packaging/run.sh",
-                    "The application runs under --illegal-final-field-access=deny. For clinical "
+                    "The application runs under --illegal-final-field-mutation=deny. For clinical "
                     + "software, 'no library can quietly mutate a final field in the dosing table' "
                     + "is a safety property rather than a checkbox.",
                     false),

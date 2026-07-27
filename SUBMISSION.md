@@ -57,7 +57,7 @@ One clinical engine, two front doors, and a deterministic floor under everything
 | 524 PEM Encodings | Ed25519 device identity and per-record signatures, with no crypto dependency | **yes** |
 | 516 AOT Caching | Cold start to first assessment: **325 ms → 281 ms (13%)**, measured | no |
 | 522 G1 throughput | The Pod's concurrent-assessment load; `packaging/gc-benchmark.sh` | no |
-| 500 Final means final | Runs under `--illegal-final-field-access=deny` | no |
+| 500 Final means final | Runs under `--illegal-final-field-mutation=deny` | no |
 | 504 Applet removal | Clean bill of health — the runtime dependency set is exactly the JDK | no |
 
 Also: **FFM** (the entire native layer, no JNI), **virtual threads** (thread-per-request), **sealed

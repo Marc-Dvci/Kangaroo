@@ -52,9 +52,23 @@ public final class Bench {
     }
 
     public static final int DEFAULT_SIZE = 512;
-    private static final int WARMUP_FRAMES = 30;
     private static final int BATCHES = 7;
     private static final int BATCH_FRAMES = 12;
+
+    /**
+     * Warm-up is budgeted in <em>pixels</em>, not frames.
+     *
+     * <p>A fixed frame count warms a 512x512 run sixteen times as hard as a 128x128 one, and the
+     * vectorised path is the one that suffers: until C2 has compiled it the intrinsics are not
+     * applied and the "vectorised" pipeline is measured while it is not yet vectorised. That
+     * produces a speedup below 1.0 on the first small-frame run, on any machine, which is a
+     * property of the harness rather than of the hardware.
+     *
+     * <p>Budgeting by pixels means every frame size crosses the same compilation thresholds, so
+     * {@code /api/bench} is measuring the same thing on a Raspberry Pi at 128 as on a laptop at 512.
+     */
+    private static final long WARMUP_PIXELS = 30L * DEFAULT_SIZE * DEFAULT_SIZE;
+    private static final int MIN_WARMUP_FRAMES = 30;
 
     /** Run the comparison on a synthetic frame of the given size. */
     public static Comparison run(int size) {
@@ -118,7 +132,7 @@ public final class Bench {
         // Warm up until C2 has compiled the kernels; the vectorised path in particular is a very
         // different shape before and after the intrinsics are applied.
         float sink = 0;
-        for (int i = 0; i < WARMUP_FRAMES; i++) {
+        for (int i = 0; i < warmupFrames(frame); i++) {
             sink += work.run(pipeline, copyOf(frame));
         }
 
@@ -138,7 +152,18 @@ public final class Bench {
         // Consume the accumulator so the whole loop cannot be optimised away.
         if (Float.isNaN(sink)) throw new AssertionError("unreachable");
 
+        // A batch that measures as zero would make the reported speedup a division by zero and the
+        // throughput infinite. One nanosecond is the floor the clock can express.
+        best = Math.max(1L, best);
+
         return new Result(pipeline.name(), best, 1_000_000_000.0 / best, BATCHES * BATCH_FRAMES);
+    }
+
+    /** Enough frames of this size to spend {@link #WARMUP_PIXELS} on warm-up. */
+    private static int warmupFrames(Frame frame) {
+        long pixels = (long) frame.width() * frame.height();
+        long frames = (WARMUP_PIXELS + pixels - 1) / Math.max(1, pixels);
+        return (int) Math.max(MIN_WARMUP_FRAMES, Math.min(frames, 20_000));
     }
 
     /**

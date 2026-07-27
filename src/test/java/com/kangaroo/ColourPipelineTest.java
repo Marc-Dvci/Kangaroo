@@ -174,10 +174,27 @@ class ColourPipelineTest {
     @DisplayName("the benchmark runs and reports both figures")
     void benchmarkRuns() {
         Bench.Comparison c = Bench.run(128);
-        assertTrue(c.scalar().medianNanos() > 0);
-        assertTrue(c.vector().medianNanos() > 0);
-        assertTrue(c.kernelSpeedup() > 0.1, "a nonsensical kernel speedup means a broken harness");
-        assertTrue(c.speedup() > 0.1);
+
+        // What the harness guarantees is that both figures are real measurements and that the
+        // reported speedups are exactly the ratios of the times reported alongside them. It does
+        // not guarantee a magnitude: this runs on shared CI runners and on Raspberry Pis, and a
+        // test that asserts "SIMD is faster here" is asserting something about the hardware.
+        assertTrue(c.scalar().medianNanos() > 0, "a zero-length batch is a broken clock");
+        assertTrue(c.vector().medianNanos() > 0, "a zero-length batch is a broken clock");
+        assertTrue(c.scalarKernels().medianNanos() > 0, "a zero-length batch is a broken clock");
+        assertTrue(c.vectorKernels().medianNanos() > 0, "a zero-length batch is a broken clock");
+
+        assertTrue(Double.isFinite(c.kernelSpeedup()), "kernel speedup must be a finite number");
+        assertTrue(Double.isFinite(c.speedup()), "end-to-end speedup must be a finite number");
+
+        assertEquals((double) c.scalarKernels().medianNanos() / c.vectorKernels().medianNanos(),
+                c.kernelSpeedup(), 1e-9, "the reported kernel speedup must be the reported ratio");
+        assertEquals((double) c.scalar().medianNanos() / c.vector().medianNanos(),
+                c.speedup(), 1e-9, "the reported speedup must be the reported ratio");
+        assertEquals(c.speedup(), c.endToEndSpeedup(), 1e-12);
+
+        // Throughput and per-frame time are two views of one measurement and must not drift apart.
+        assertEquals(1_000_000_000.0 / c.vector().medianNanos(), c.vector().framesPerSec(), 1e-6);
     }
 
     // ---------------------------------------------------------------- helpers

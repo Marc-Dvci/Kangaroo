@@ -85,7 +85,7 @@ jobs:
 
       - name: Upload the jar
         if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: kangaroo-jar
           path: target/kangaroo.jar
@@ -101,9 +101,6 @@ jobs:
           java-version: '26'
           cache: maven
 
-      # The claim is "zero runtime dependencies -- the JDK is the whole stack". The enforcer rule in
-      # the pom asserts it, and this makes the assertion visible as its own check rather than a line
-      # buried in a build log.
       # A fresh clone has to be runnable as-is. Every Unix runner and every reader following the
       # README invokes these directly, so the executable bit is part of the build contract.
       - name: The wrapper and the packaging scripts are executable
@@ -120,6 +117,9 @@ jobs:
           done
           exit $status
 
+      # The claim is "zero runtime dependencies -- the JDK is the whole stack". The enforcer rule in
+      # the pom asserts it, and this makes the assertion visible as its own check rather than a line
+      # buried in a build log.
       - name: Assert the runtime dependency set is empty
         # pipefail matters here: without it the exit status of the pipeline is tee's, and a Maven
         # failure would be reported as a passing check.
@@ -135,10 +135,10 @@ jobs:
 
       # JEP 500. For clinical software, "no library can quietly mutate a final field in my dosing
       # table" is a safety property, and this is where it is checked rather than assumed.
-      - name: Run under --illegal-final-field-access=deny
+      - name: Run under --illegal-final-field-mutation=deny
         run: |
           ./mvnw -B -q package -DskipTests
           java --enable-preview --add-modules jdk.incubator.vector \
                --enable-native-access=ALL-UNNAMED \
-               --illegal-final-field-access=deny \
+               --illegal-final-field-mutation=deny \
                -jar target/kangaroo.jar --port 8444 --data "$RUNNER_TEMP/k2" --warmup-and-exit

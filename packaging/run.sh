@@ -27,7 +27,7 @@ flags=(
   # mutate a final field in my dosing table" is a safety property rather than a checkbox. Kangaroo
   # has zero runtime dependencies, so nothing in the process has any business doing this, and
   # denying it outright costs nothing.
-  --illegal-final-field-access=deny
+  --illegal-final-field-mutation=deny
 
   # The FFM layer needs explicit permission to call native code. Naming it here rather than
   # suppressing the warning means an unexpected native call is still visible.
