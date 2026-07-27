@@ -55,7 +55,7 @@ One clinical engine, two front doors, and a deterministic floor under everything
 | 530 Primitive Patterns | LightGBM's packed decision byte; checked `double`→`float` narrowing | no |
 | 529 Vector API | Colorimetry kernels, measured live at `/api/bench` | **yes** |
 | 524 PEM Encodings | Ed25519 device identity and per-record signatures, with no crypto dependency | **yes** |
-| 516 AOT Caching | Cold start to first assessment: **325 ms → 281 ms (13%)**, measured | no |
+| 516 AOT Caching | Cold start to first assessment: **409 ms → 351 ms (14%)**, measured | no |
 | 522 G1 throughput | The Pod's concurrent-assessment load; `packaging/gc-benchmark.sh` | no |
 | 500 Final means final | Runs under `--illegal-final-field-mutation=deny` | no |
 | 504 Applet removal | Clean bill of health — the runtime dependency set is exactly the JDK | no |
@@ -115,10 +115,11 @@ No figure here is an estimate, and every one of them is reproducible from a clea
   swept profiles. Printed by `ImnciConformanceTest`, which fails the build if it regresses past 3%,
   and contained by construction: `modelCanOnlyEscalateNeverDeEscalate` proves over 50,000 profiles
   that a head can raise a classification and never lower one.
-- **1.47× kernels / 1.03× end to end** — Vector API speedup, re-measured live at `GET /api/bench` on
+- **1.41× kernels / 1.04× end to end** — Vector API speedup, re-measured live at `GET /api/bench` on
   whatever machine a judge runs it on. Both rows are reported: the pipeline is memory-bandwidth
   bound, and the end-to-end path carries an exact percentile sort the design keeps on purpose.
-- **325 ms → 281 ms** — cold start to first assessment with the JEP 516 AOT cache.
+- **409 ms → 351 ms (14%)** — cold start to first completed assessment with the JEP 516 AOT cache,
+  best of seven each way. Reproduce with `./packaging/aot.sh`.
 - **Under 1 ms** — offline assessment latency on a laptop.
 - **69 / 69** — tests green on Linux x64, Linux arm64, macOS arm64 and Windows in CI.
 

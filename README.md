@@ -164,13 +164,16 @@ On the development laptop (AVX-512, 16 lanes), 512×512 frame:
 
 | | scalar | vector | speedup |
 |---|---|---|---|
-| **The four kernels** | 2.22 ms | 1.51 ms | **1.47×** |
-| **End-to-end `extract`** | 8.05 ms | 7.79 ms | 1.03× |
+| **The four kernels** | 2.54 ms | 1.80 ms | **1.41×** |
+| **End-to-end `extract`** | 9.05 ms | 8.68 ms | 1.04× |
+
+These are the figures in [`build.log`](build.log), captured by the same `/api/bench` endpoint you can
+call yourself. Run it on your own machine and you will get your machine's numbers, not these.
 
 Both rows are reported, because the kernel figure alone would flatter the pipeline and the
 end-to-end figure alone would hide the work SIMD is actually doing:
 
-- **The kernel speedup is 1.47×**, which is what this shape of problem pays. The loops read 3 MB per
+- **The kernel speedup is around 1.4×**, which is what this shape of problem pays. The loops read 3 MB per
   frame and are memory-bandwidth bound rather than compute bound, so the ceiling is the memory
   system, not the lane count. Getting there from 1.0× came from replacing a per-block horizontal
   reduction with lane-wise accumulators flushed to a `double` every 64 blocks — see
