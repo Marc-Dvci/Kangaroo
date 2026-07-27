@@ -1,11 +1,13 @@
 package com.kangaroo.orchestrate;
 
+import com.kangaroo.audio.CryAnalysis;
 import com.kangaroo.audit.ClinicalEvents;
 import com.kangaroo.clinical.ImnciRule;
 import com.kangaroo.color.Frame;
 import com.kangaroo.color.JaundiceAnalyzer;
 import com.kangaroo.core.Assessment;
 import com.kangaroo.core.Capture;
+import com.kangaroo.core.CryFinding;
 import com.kangaroo.core.DangerSign;
 import com.kangaroo.core.Encounter;
 import com.kangaroo.core.Feature;
@@ -82,7 +84,8 @@ public final class AssessmentOrchestrator implements AutoCloseable {
     /** The outcome of one evidence pass. Sealed so the reconciliation below is exhaustive. */
     sealed interface Pass {
         record Visual(Optional<JaundiceGrade> grade, List<String> notes) implements Pass {}
-        record Audio(Optional<DangerSign> cry, List<String> notes) implements Pass {}
+        record Audio(Optional<DangerSign> cry, Optional<CryFinding> finding,
+                     List<String> notes) implements Pass {}
         record Vitals(SignProfile profile) implements Pass {}
         record History(List<String> trend, boolean worsening) implements Pass {}
     }
@@ -100,6 +103,7 @@ public final class AssessmentOrchestrator implements AutoCloseable {
         List<String> gaps = new ArrayList<>();
         Optional<JaundiceGrade> grade = Optional.empty();
         Optional<DangerSign> cry = Optional.empty();
+        Optional<CryFinding> cryFinding = Optional.empty();
         SignProfile profile;
         List<String> trend = List.of();
         boolean worsening = false;
@@ -138,6 +142,7 @@ public final class AssessmentOrchestrator implements AutoCloseable {
             var a = result(audio, Pass.Audio.class);
             if (a.isPresent()) {
                 cry = a.get().cry();
+                cryFinding = a.get().finding();
             } else if (encounter.cryAudio().isPresent()) {
                 gaps.add("cry analysis");
             }
@@ -173,7 +178,7 @@ public final class AssessmentOrchestrator implements AutoCloseable {
         Assessment assessment = new Assessment(
                 encounter.id(), r.light(), r.classification(), outcome.signs(), profile,
                 ruleLight, verdict, narrative.suggested(), narrativeText(narrative, r, trend),
-                grade, narrative.rung(), r.abstained(), r.supervisorReview(),
+                grade, cryFinding, narrative.rung(), r.abstained(), r.supervisorReview(),
                 toolResults(encounter, outcome, r), started, elapsed);
 
         record(assessment, encounter);
@@ -205,13 +210,22 @@ public final class AssessmentOrchestrator implements AutoCloseable {
     }
 
     private Pass audioPass(Encounter encounter) {
-        // The cry classifier is future work; the pass exists so that the shape of the pipeline is
-        // honest about where it goes, and it reports its own absence rather than pretending.
         if (encounter.cryAudio().isEmpty()) {
-            return new Pass.Audio(Optional.empty(), List.of("no cry recording"));
+            return new Pass.Audio(Optional.empty(), Optional.empty(), List.of("no cry recording"));
         }
-        return new Pass.Audio(Optional.empty(),
-                List.of("cry recording captured and stored; automated grading not enabled"));
+
+        // A weak, absent or high-pitched cry is a danger sign the chart already lists, so the
+        // recording is measured rather than merely stored. Like the jaundice grader, this one is
+        // allowed to refuse: a clip it cannot read leaves a gap in the evidence, never a
+        // reassuring answer.
+        CryAnalysis.Result cry = CryAnalysis.analyse(encounter.cryAudio().get().bytes());
+
+        List<String> notes = new ArrayList<>(cry.notes());
+        if (!cry.graded()) {
+            notes.add("cry recording not graded; it is kept with the encounter for a clinician");
+            return new Pass.Audio(Optional.empty(), Optional.of(cry.finding()), List.copyOf(notes));
+        }
+        return new Pass.Audio(cry.sign(), Optional.of(cry.finding()), List.copyOf(notes));
     }
 
     private Pass vitalsPass(Encounter encounter) {

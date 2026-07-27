@@ -415,6 +415,13 @@ public final class KangarooServer implements AutoCloseable {
                 .put("zones", Json.arr(g.kramerZones().stream().map(Json::of).toList()))
                 .build()));
 
+        assessment.cry().ifPresent(c -> builder.put("cry", Json.obj()
+                .put("graded", c.graded())
+                .put("summary", c.summary())
+                .put("median_f0_hz", c.medianF0Hz())
+                .put("voiced_seconds", c.voicedSeconds())
+                .build()));
+
         var tools = Json.obj();
         assessment.toolResults().forEach((k, v) -> {
             switch (v) {

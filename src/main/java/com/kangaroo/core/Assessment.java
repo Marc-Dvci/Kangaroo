@@ -27,6 +27,7 @@ import java.util.Optional;
  * @param abstained         true when the conformal prediction set was not a singleton and we referred upward
  * @param supervisorReview  true when the heads disagreed and a human must sign off
  * @param toolResults       deterministic tool outputs (dose, z-score, ORS, referral, follow-up)
+ * @param cry               what the cry recording sounded like, when one was made
  * @param assessedAt        when
  * @param elapsed           wall-clock time for the whole orchestrated assessment
  */
@@ -41,6 +42,7 @@ public record Assessment(
         Optional<TrafficLight> narrativeLight,
         String narrative,
         Optional<JaundiceGrade> jaundice,
+        Optional<CryFinding> cry,
         Rung rung,
         boolean abstained,
         boolean supervisorReview,
@@ -56,6 +58,7 @@ public record Assessment(
         if (narrative == null) narrative = "";
         if (narrativeLight == null) narrativeLight = Optional.empty();
         if (jaundice == null) jaundice = Optional.empty();
+        if (cry == null) cry = Optional.empty();
     }
 
     /** The one-line answer, in the vocabulary of the front door that asked. */

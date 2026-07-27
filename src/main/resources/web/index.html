@@ -145,6 +145,30 @@
         </p>
       </fieldset>
 
+      <fieldset class="card" id="cry-card">
+        <legend>The cry</legend>
+        <p class="hint">
+          Ten seconds of the baby's cry, with the phone held comfortably close.
+          A weak, absent or high-pitched cry is a danger sign.
+        </p>
+        <div class="cry">
+          <button type="button" class="cry-record" id="cry-record">
+            <span class="cry-dot" aria-hidden="true"></span>
+            <span class="cry-label" id="cry-label">Record the cry</span>
+          </button>
+          <div class="cry-meta">
+            <div class="cry-timer" id="cry-timer">10s</div>
+            <button type="button" class="ghost" id="cry-clear" hidden>Clear</button>
+          </div>
+        </div>
+        <div class="cry-level" id="cry-level" hidden aria-hidden="true"><span id="cry-level-bar"></span></div>
+        <p class="muted small" id="cry-result" aria-live="polite"></p>
+        <p class="muted small">
+          The recording is analysed on this device. If it cannot be graded, Kangaroo says so
+          rather than guessing.
+        </p>
+      </fieldset>
+
       <fieldset class="card" id="privacy-card">
         <legend>Privacy</legend>
         <label class="check">
@@ -182,8 +206,18 @@
     </div>
 
     <div class="card" id="narrative-card">
-      <h2>What to do</h2>
+      <div class="card-head">
+        <h2>What to do</h2>
+        <button class="ghost speak-btn" id="speak-btn" hidden>
+          <span aria-hidden="true">🔊</span> <span id="speak-label">Read this aloud</span>
+        </button>
+      </div>
       <div class="narrative" id="narrative"></div>
+    </div>
+
+    <div class="card" id="cry-card-result" hidden>
+      <h2>The cry</h2>
+      <div id="cry-findings"></div>
     </div>
 
     <div class="card" id="jaundice-card" hidden>

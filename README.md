@@ -50,9 +50,11 @@ One clinical engine, two front doors.
 A first-time parent at 3 a.m. holding a baby that seems *off* currently has two options: a search
 engine that will terrify them, or a phone call they feel guilty making. Parent mode is the third.
 
-- A **two-minute check**: three plain-language questions, a tap-to-count breathing measure, and a
-  photograph or two.
-- A result with a colour and a sentence: *carry on*, *see someone today*, *go now*.
+- A **two-minute check**: three plain-language questions, a tap-to-count breathing measure, a
+  photograph or two, and ten seconds of the baby's cry.
+- A result with a colour and a sentence: *carry on*, *see someone today*, *go now* — and a button
+  that **reads the plan aloud**, because a meaningful share of the people this is for do not read
+  comfortably in any language.
 - **It never says the baby is fine.** It says nothing it can see needs a clinician today, and it
   always ships the return-immediately list alongside.
 - It escalates on a **lower threshold** than health-worker mode, because a parent has less signal
@@ -60,7 +62,7 @@ engine that will terrify them, or a phone call they feel guilty making. Parent m
 
 ### Health-worker mode — the WHO IMNCI young-infant assessment
 
-- Seven guided captures, a counted respiratory rate, and structured intake.
+- Seven guided captures, a counted respiratory rate, a ten-second cry recording, and structured intake.
 - The full **WHO IMNCI danger-sign classification** with a red/amber/green result and every finding
   traced back to the words that produced it.
 - **Five deterministic clinical tools**: weight-for-age z-score, medication dosing with hard
@@ -90,6 +92,15 @@ java --enable-preview --add-modules jdk.incubator.vector \
 ```
 
 Then open <http://localhost:8443/>. Turn off your Wi-Fi first if you like — it makes the point better.
+
+That is the whole product. If you also want the optional on-device language model, one command
+fetches it and the native runtime, pinned and hash-checked:
+
+```bash
+java -jar target/kangaroo.jar --setup            # add --dry-run to see the plan and the size first
+```
+
+Then start it exactly as above: `--model` and `--projector` default to what setup installed.
 
 To let a phone on the same network use its camera and pair with your laptop:
 
@@ -320,6 +331,20 @@ The jaundice grader declines to grade a photograph that is too dark, too bright,
 card visible, or shows too little skin — and says which, in words the user can act on. Rejecting a
 bad capture before inference is worth more accuracy than any model change.
 
+The cry analysis refuses on the same principle, and one of its refusals is the most important line
+in that package. A recording with **no crying in it** is refused, not reported as an absent cry:
+
+> *No crying was heard. If the baby will not cry when roused, tick "weak or absent cry" — that is a
+> danger sign.*
+
+A sleeping healthy newborn and a newborn too sick to cry produce acoustically identical ten-second
+recordings, and only a person who has tried to rouse the baby can tell them apart. Reading silence
+as a danger sign would refer a large share of healthy infants, and a tool that cries wolf on most
+visits is a tool that stops being used — which costs more lives than the feature saves. So the
+machine reports what it heard, and the danger sign is recorded when a person ticks it, with examiner
+provenance. [`CryAnalysis`](src/main/java/com/kangaroo/audio/CryAnalysis.java) measures the
+fundamental frequency and how much phonation there was; the chart decides what it means.
+
 ### Privacy
 
 Everything is local by default. Photographs are analysed on-device and **are not retained after the
@@ -451,18 +476,45 @@ python tools/generate_parity_vectors.py
 Kangaroo produces valid WHO classifications with **no model at all**. The language model adds better
 prose; it does not add correctness, and it is not required.
 
-To enable it you need llama.cpp shared libraries and a GGUF model. The libraries are not vendored
-into this repository: they are large, platform-specific, and pinning someone else's binaries into a
-clinical repository is a supply-chain liability rather than a convenience.
+When you do want it, one command fetches everything:
 
-1. Download a [llama.cpp release](https://github.com/ggml-org/llama.cpp/releases) for your platform.
-   These bindings target build **b9006** and verify the struct layouts at startup.
-2. Put the shared libraries in `./runtime/bin`, or set `-Dkangaroo.native.dir=<dir>`.
-3. Run with a model:
+```bash
+java -jar target/kangaroo.jar --setup          # ~5.7 GB: runtime, model and vision projector
+java -jar target/kangaroo.jar --setup runtime  # just the llama.cpp libraries
+java -jar target/kangaroo.jar --setup model    # just the weights
+java -jar target/kangaroo.jar --setup --dry-run
+```
+
+Setup is written in Java against the JDK's own HTTP client, because a bootstrap step that needs
+Python installed is a bootstrap step that fails on the device this is for. It fetches:
+
+| What | Size | Pinned to |
+|---|---|---|
+| llama.cpp CPU build for your platform | ~9–16 MB | release **b9006**, the build these FFM bindings verify their struct layouts against |
+| Gemma 4 E4B, IQ4_XS quantisation | 4.7 GB | an immutable Hugging Face revision |
+| `mmproj` vision projector | 992 MB | likewise — this is what makes the captured photographs legible to the model rather than merely stored |
+
+Every artifact is pinned to an immutable revision **and** a SHA-256. An interrupted download resumes
+from where it stopped rather than starting the 4.7 GB again, the digest is recomputed over the bytes
+already on disk rather than assumed, and nothing is moved to where the application reads from until
+it verifies. Re-running downloads nothing.
+
+Nothing is vendored into the repository: these are large, platform-specific, somebody else's build,
+and committing a copy would ask every future reader to trust a binary blob in a git history. A
+pinned, hash-checked fetch is the same convenience with an audit trail.
+
+Afterwards, start Kangaroo exactly as you did before — `--model` and `--projector` default to what
+setup installed:
 
 ```bash
 java --enable-preview --add-modules jdk.incubator.vector \
-     --enable-native-access=ALL-UNNAMED -jar target/kangaroo.jar \
+     --enable-native-access=ALL-UNNAMED -jar target/kangaroo.jar --open
+```
+
+To use weights you already have, name them:
+
+```bash
+java ... -jar target/kangaroo.jar \
      --model  /path/to/model.gguf \
      --mmproj /path/to/mmproj.gguf     # optional, enables image understanding
 ```
@@ -527,7 +579,7 @@ The rest of the boundary is drawn deliberately, and each line is engineered rath
 |---|---|
 | The colorimetric jaundice head is the softest signal in the system (55.5% held-out severity accuracy across five grades) | It never decides alone, it can refuse to grade, and it enters the rule as one sign among many. The design choices that make it robust across skin tone — extent over intensity, a reference card, palms and soles, refusal — are set out in [docs/fairness.md](docs/fairness.md), along with the study that would put a number on it. |
 | Kramer zone banding assumes a head-to-toe capture with the infant upright in shot | When the assumption does not hold the zones agree with each other and the result lands at zone 1, the conservative answer. |
-| The audio pass carries no cry classifier | The pass reports the gap as missing evidence, recordings are stored for a clinician, and in parent mode a gap escalates. Losing one pass never invalidates the twenty other danger signs. |
+| The cry analysis measures the recording; it does not diagnose from it | It reports fundamental frequency and phonation, may only escalate, and refuses a clip it cannot read. Crucially, a recording with **no crying in it** is a refusal rather than an "absent cry": a sleeping healthy newborn and one too sick to cry produce the same audio, and only a person who has tried to rouse the baby can tell them apart. |
 | Interface catalogues ship in English and French | All twelve languages drive the model-generated action plan, which is the part a caregiver reads. The remaining interface catalogues are staged for native-speaker review before release — see [docs/i18n.md](docs/i18n.md). |
 | The benchmark harness is a timing loop, not JMH | It warms up and reports the best of seven batches, which resolves the difference this comparison has. `GET /api/bench` re-measures it on your hardware rather than asking you to take the table on trust. |
 
@@ -545,6 +597,7 @@ kangaroo/
     clinical/    IMNCI rule · dosing ceilings · z-score · ORS · referral · PSBI
     ml/          GBM engine · abstention · feature extraction
     color/       colorimetry · Kramer zones · Vector API · benchmark
+    audio/       WAV decoding · cry acoustics — pitch, phonation, refusal
     infer/       sealed InferenceEngine · native · OpenAI-compatible · deterministic · failover
     ffm/llama/   FFM bindings — libllama + mtmd, no JNI
     orchestrate/ StructuredTaskScope assessment pipeline
@@ -553,6 +606,7 @@ kangaroo/
     crypto/      PEM device identity (JEP 524) · record signing
     audit/       JFR clinical events · the JEP map
     i18n/        ResourceBundle catalogues
+    setup/       pinned, resumable, hash-checked model and runtime download
     app/         entry point · native diagnostic
   src/main/resources/
     web/         the progressive web app — hand-written, no build step

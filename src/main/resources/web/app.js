@@ -20,6 +20,8 @@ const state = {
   breaths: [],
   breathTimer: null,
   breathStart: 0,
+  cry: null,          // a data: URL holding a WAV, once one has been recorded
+  crySeconds: 0,
   result: null,
 };
 
@@ -221,6 +223,246 @@ function downscale(file, maxEdge) {
   });
 }
 
+/* ─────────────────────────────── reading it aloud ───────────────────────────────
+ *
+ * The action plan is the part a caregiver has to act on, and a meaningful share of the people this
+ * is built for do not read comfortably in any language, let alone the one on the screen. Speech
+ * synthesis is part of the browser and runs with no network, so the plan can be heard rather than
+ * only read, at no cost to the offline guarantee.
+ *
+ * The button is hidden entirely when the platform has no voice for the selected language, because a
+ * button that reads Swahili aloud in an English accent is worse than no button.
+ */
+
+function setupSpeech(result) {
+  const button = $('#speak-btn');
+  const label = $('#speak-label');
+  if (!('speechSynthesis' in window)) { button.hidden = true; return; }
+
+  const locale = currentLocale();
+  const voice = pickVoice(locale);
+  if (!voice) { button.hidden = true; return; }
+
+  button.hidden = false;
+  label.textContent = 'Read this aloud';
+
+  button.onclick = () => {
+    if (speechSynthesis.speaking) {
+      speechSynthesis.cancel();
+      label.textContent = 'Read this aloud';
+      return;
+    }
+    // The headline first, then the plan: someone who walks away after three seconds should still
+    // have heard whether to go now.
+    const text = `${result.headline}. ${result.narrative || ''}`;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.voice = voice;
+    utterance.lang = voice.lang;
+    utterance.rate = 0.95;
+    utterance.onend = () => { label.textContent = 'Read this aloud'; };
+    speechSynthesis.cancel();
+    speechSynthesis.speak(utterance);
+    label.textContent = 'Stop';
+  };
+}
+
+function pickVoice(locale) {
+  const voices = speechSynthesis.getVoices();
+  if (!voices.length) return null;
+  const tag = (locale || 'en').toLowerCase();
+  return voices.find(v => v.lang.toLowerCase().replace('_', '-').startsWith(tag)) || null;
+}
+
+/* ─────────────────────────────── the cry recording ───────────────────────────────
+ *
+ * Recorded through the Web Audio API and encoded to WAV here, rather than handed to
+ * MediaRecorder. MediaRecorder produces Opus in a WebM container, and decoding that on the server
+ * would mean adding a codec to a project whose entire claim is that it has no dependencies. Raw
+ * samples plus a forty-four byte RIFF header costs about thirty lines and keeps that promise.
+ *
+ * Downsampled to 16 kHz because the analysis only looks below about 1.4 kHz, and a ten-second clip
+ * at 48 kHz is three times the bytes for no extra signal — which matters when the upload is a phone
+ * on a village Wi-Fi.
+ */
+
+const CRY_SECONDS = 10;
+const CRY_RATE = 16_000;
+
+function setupCry() {
+  const button = $('#cry-record');
+  const label = $('#cry-label');
+  const timer = $('#cry-timer');
+  const result = $('#cry-result');
+  const level = $('#cry-level');
+  const bar = $('#cry-level-bar');
+
+  let recording = null;
+
+  button.addEventListener('click', async () => {
+    if (recording) { stop(); return; }
+    try {
+      recording = await start();
+    } catch (e) {
+      // The commonest case by far is a denied microphone permission, and the cry is optional, so
+      // this must never look like the assessment has failed.
+      result.textContent = e && e.name === 'NotAllowedError'
+        ? 'Microphone permission was refused. The check works without the cry.'
+        : 'This device could not record audio. The check works without the cry.';
+      recording = null;
+    }
+  });
+
+  $('#cry-clear').addEventListener('click', () => {
+    state.cry = null;
+    state.crySeconds = 0;
+    label.textContent = 'Record the cry';
+    timer.textContent = `${CRY_SECONDS}s`;
+    result.textContent = '';
+    button.classList.remove('has-audio');
+    $('#cry-clear').hidden = true;
+    updateSteps();
+  });
+
+  async function start() {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: { channelCount: 1, echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+    });
+
+    // Automatic gain control is turned off on purpose: it is designed to make speech a constant
+    // loudness, which is precisely the information a weak cry is carried in.
+    const context = new (window.AudioContext || window.webkitAudioContext)();
+    const source = context.createMediaStreamSource(stream);
+    const analyser = context.createAnalyser();
+    analyser.fftSize = 1024;
+    source.connect(analyser);
+
+    const chunks = [];
+    const processor = context.createScriptProcessor(4096, 1, 1);
+    processor.onaudioprocess = e => chunks.push(new Float32Array(e.inputBuffer.getChannelData(0)));
+    source.connect(processor);
+    processor.connect(context.destination);
+
+    button.classList.add('recording');
+    label.textContent = 'Stop';
+    level.hidden = false;
+    result.textContent = '';
+
+    const started = Date.now();
+    const meter = new Uint8Array(analyser.frequencyBinCount);
+
+    const tick = setInterval(() => {
+      const elapsed = (Date.now() - started) / 1000;
+      timer.textContent = `${Math.max(0, CRY_SECONDS - elapsed).toFixed(0)}s`;
+
+      analyser.getByteFrequencyData(meter);
+      let sum = 0;
+      for (const v of meter) sum += v;
+      bar.style.width = `${Math.min(100, (sum / meter.length) * 2)}%`;
+
+      if (elapsed >= CRY_SECONDS) stop();
+    }, 100);
+
+    return { stream, context, processor, source, chunks, tick, started };
+  }
+
+  function stop() {
+    if (!recording) return;
+    const { stream, context, processor, source, chunks, tick, started } = recording;
+    recording = null;
+
+    clearInterval(tick);
+    processor.disconnect();
+    source.disconnect();
+    stream.getTracks().forEach(t => t.stop());
+    const rate = context.sampleRate;
+    context.close();
+
+    button.classList.remove('recording');
+    level.hidden = true;
+    bar.style.width = '0%';
+
+    const samples = concat(chunks);
+    const seconds = samples.length / rate;
+    if (seconds < 3) {
+      label.textContent = 'Record the cry';
+      timer.textContent = `${CRY_SECONDS}s`;
+      result.textContent = 'That was too short to grade. Record about ten seconds.';
+      return;
+    }
+
+    const wav = encodeWav(downsample(samples, rate, CRY_RATE), CRY_RATE);
+    state.cry = `data:audio/wav;base64,${base64(wav)}`;
+    state.crySeconds = seconds;
+
+    button.classList.add('has-audio');
+    label.textContent = 'Recorded';
+    timer.textContent = `${seconds.toFixed(0)}s`;
+    result.textContent = 'Recorded. It will be graded on this device when you run the check.';
+    $('#cry-clear').hidden = false;
+    updateSteps();
+  }
+}
+
+function concat(chunks) {
+  const total = chunks.reduce((n, c) => n + c.length, 0);
+  const out = new Float32Array(total);
+  let at = 0;
+  for (const c of chunks) { out.set(c, at); at += c.length; }
+  return out;
+}
+
+/** Averaging decimation. Cheap, and it low-passes rather than aliasing the way plain picking does. */
+function downsample(samples, from, to) {
+  if (to >= from) return samples;
+  const ratio = from / to;
+  const out = new Float32Array(Math.floor(samples.length / ratio));
+  for (let i = 0; i < out.length; i++) {
+    const start = Math.floor(i * ratio);
+    const end = Math.min(samples.length, Math.floor((i + 1) * ratio));
+    let sum = 0;
+    for (let j = start; j < end; j++) sum += samples[j];
+    out[i] = end > start ? sum / (end - start) : 0;
+  }
+  return out;
+}
+
+/** 16-bit mono RIFF/WAVE. */
+function encodeWav(samples, rate) {
+  const buffer = new ArrayBuffer(44 + samples.length * 2);
+  const view = new DataView(buffer);
+  const ascii = (offset, s) => { for (let i = 0; i < s.length; i++) view.setUint8(offset + i, s.charCodeAt(i)); };
+
+  ascii(0, 'RIFF');
+  view.setUint32(4, 36 + samples.length * 2, true);
+  ascii(8, 'WAVE');
+  ascii(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);            // PCM
+  view.setUint16(22, 1, true);            // mono
+  view.setUint32(24, rate, true);
+  view.setUint32(28, rate * 2, true);     // byte rate
+  view.setUint16(32, 2, true);            // block align
+  view.setUint16(34, 16, true);           // bits per sample
+  ascii(36, 'data');
+  view.setUint32(40, samples.length * 2, true);
+
+  for (let i = 0; i < samples.length; i++) {
+    const s = Math.max(-1, Math.min(1, samples[i]));
+    view.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+  }
+  return new Uint8Array(buffer);
+}
+
+/** Chunked, because a ten-second clip overflows the argument list of String.fromCharCode. */
+function base64(bytes) {
+  let binary = '';
+  const CHUNK = 0x8000;
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
+  }
+  return btoa(binary);
+}
+
 /* ─────────────────────────────── breathing counter ─────────────────────────────── */
 
 function setupBreathing() {
@@ -333,7 +575,10 @@ async function submit(event) {
     respiratory_rate: $('#respiratory_rate').value === '' ? -1 : Number($('#respiratory_rate').value),
     privacy_local: $('#privacy_local').checked,
     locale: currentLocale(),
-    captures: [...state.captures].map(([kind, data]) => ({ kind, media_type: 'image/jpeg', data })),
+    captures: [
+      ...[...state.captures].map(([kind, data]) => ({ kind, media_type: 'image/jpeg', data })),
+      ...(state.cry ? [{ kind: 'CRY', media_type: 'audio/wav', data: state.cry }] : []),
+    ],
   };
 
   try {
@@ -375,6 +620,20 @@ function renderResult(r) {
   }
 
   $('#narrative').textContent = r.narrative?.trim() || 'No further guidance was generated.';
+  setupSpeech(r);
+
+  const cryCard = $('#cry-card-result');
+  if (r.cry) {
+    cryCard.hidden = false;
+    $('#cry-findings').innerHTML = r.cry.graded
+      ? `<p>${escapeHtml(r.cry.summary)}</p>
+         <p class="muted small">Heard by the device, not by a person. It can raise the level of
+           concern and never lower it.</p>`
+      : `<p>${escapeHtml(r.cry.summary)}</p>
+         <p class="muted small">The recording is kept with this encounter for a clinician.</p>`;
+  } else {
+    cryCard.hidden = true;
+  }
 
   const jaundiceCard = $('#jaundice-card');
   if (r.jaundice) {
@@ -594,6 +853,13 @@ function init() {
   $('#edit-btn').addEventListener('click', () => show('check'));
   $('#print-btn').addEventListener('click', () => window.print());
   $('#bench-btn').addEventListener('click', runBench);
+  setupCry();
+
+  // Voices arrive asynchronously on most platforms, so a result rendered before they load would
+  // hide the button forever.
+  if ('speechSynthesis' in window) {
+    speechSynthesis.onvoiceschanged = () => { if (state.result) setupSpeech(state.result); };
+  }
 
   $$('[data-nav]').forEach(a => a.addEventListener('click', e => {
     e.preventDefault();
