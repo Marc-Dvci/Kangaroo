@@ -116,23 +116,6 @@ java --enable-preview --add-modules jdk.incubator.vector \
 The client is an installable progressive web app: open it on a phone, add it to the home screen, and
 it works from there with no app store and no signal.
 
-### Or watch it drive itself
-
-```
-start-demo.bat          Windows
-./start-demo.sh         macOS and Linux
-```
-
-A 114-second narrated walk-through that **drives this application for real** — it clicks the real
-buttons, types into the real form and posts to the real `/api/assess`, so every classification,
-every Kramer zone, every cry pitch and the benchmark figures are computed live on your machine while
-you watch. The only thing it supplies is the sensor input a laptop cannot capture: a synthetic
-photograph, a ten-second cry and a chest-motion trace, all generated in about sixty lines of
-arithmetic you can read in [`demo/demo.js`](src/main/resources/web/demo/demo.js).
-
-See [`demo/README.md`](demo/README.md) for what is real, what is supplied, and how to change the
-script.
-
 ---
 
 ## Every JDK 26 JEP, and where it lives
@@ -613,7 +596,6 @@ The rest of the boundary is drawn deliberately, and each line is engineered rath
 kangaroo/
   pom.xml                     release 26 · --enable-preview · --add-modules jdk.incubator.vector
   build.log                   committed proof of a Java 26 compile and run
-  start-demo.bat / .sh        one click: build, run, and narrate the demo
   BOM.md                      bill of materials, all four tiers
   src/main/java/com/kangaroo/
     core/        domain model — records, sealed types, exhaustive switches
@@ -641,7 +623,6 @@ kangaroo/
   testdata/       24,070 golden parity vectors
   tools/          parity generator · single-file JEP 458 diagnostic
   packaging/      AOT cache · jlink · GC benchmark · run scripts
-  demo/           narration script · edge-tts voice-over generator · what is real
   docs/           architecture · safety · fairness · i18n · colour card · demo script
                   system-architecture.svg · pod-wiring.svg · colour-card.svg
 ```

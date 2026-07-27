@@ -34,7 +34,6 @@ final class StaticFiles {
             Map.entry("jpg", "image/jpeg"),
             Map.entry("ico", "image/x-icon"),
             Map.entry("woff2", "font/woff2"),
-            Map.entry("mp3", "audio/mpeg"),
             Map.entry("txt", "text/plain; charset=utf-8"),
             Map.entry("pdf", "application/pdf"));
 
