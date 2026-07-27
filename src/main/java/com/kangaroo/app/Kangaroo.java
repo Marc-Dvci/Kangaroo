@@ -1,6 +1,7 @@
 package com.kangaroo.app;
 
 import com.kangaroo.audit.Jeps;
+import com.kangaroo.core.Rung;
 import com.kangaroo.crypto.DeviceIdentity;
 import com.kangaroo.ffm.NativeRuntime;
 import com.kangaroo.http.KangarooServer;
@@ -11,6 +12,8 @@ import com.kangaroo.infer.NativeEngine;
 import com.kangaroo.infer.OpenAiCompatibleEngine;
 import com.kangaroo.infer.Provider;
 import com.kangaroo.orchestrate.AssessmentOrchestrator;
+import com.kangaroo.setup.Manifest;
+import com.kangaroo.setup.Setup;
 import com.kangaroo.store.EncounterStore;
 import com.kangaroo.store.PatientMemory;
 
@@ -52,7 +55,7 @@ public final class Kangaroo {
      */
     record Config(int port, String bind, Path dataDir, Path model, Path projector,
                   String apiKey, String modelName, URI serverUrl, boolean open,
-                  boolean warmupAndExit) {
+                  boolean warmupAndExit, Setup.Scope setup, boolean dryRun) {
 
         static Config parse(String[] args) {
             int port = DEFAULT_PORT;
@@ -67,9 +70,26 @@ public final class Kangaroo {
             URI serverUrl = null;
             boolean open = false;
             boolean warmupAndExit = false;
+            Setup.Scope setup = null;
+            boolean dryRun = false;
 
             for (int i = 0; i < args.length; i++) {
                 switch (args[i]) {
+                    // --setup takes an optional scope, so "--setup" and "--setup runtime" both
+                    // read naturally. Anything starting with a dash is the next option, not a scope.
+                    case "--setup" -> {
+                        setup = Setup.Scope.ALL;
+                        if (i + 1 < args.length && !args[i + 1].startsWith("-")) {
+                            setup = switch (args[++i]) {
+                                case "all" -> Setup.Scope.ALL;
+                                case "runtime" -> Setup.Scope.RUNTIME;
+                                case "model" -> Setup.Scope.MODEL;
+                                default -> throw new IllegalArgumentException(
+                                        "--setup takes all, runtime or model (got " + args[i] + ")");
+                            };
+                        }
+                    }
+                    case "--dry-run" -> dryRun = true;
                     case "--port" -> port = Integer.parseInt(next(args, ++i, "--port"));
                     case "--bind" -> bind = next(args, ++i, "--bind");
                     case "--lan" -> bind = "0.0.0.0";
@@ -90,7 +110,8 @@ public final class Kangaroo {
                 }
             }
             return new Config(port, bind, dataDir, model, projector,
-                    apiKey == null ? "" : apiKey, modelName, serverUrl, open, warmupAndExit);
+                    apiKey == null ? "" : apiKey, modelName, serverUrl, open, warmupAndExit,
+                    setup, dryRun);
         }
 
         private static String next(String[] args, int i, String option) {
@@ -101,6 +122,13 @@ public final class Kangaroo {
 
     public static void main(String[] args) throws Exception {
         Config config = Config.parse(args);
+
+        // Setup is a command, not a mode: it downloads, reports and exits without starting a server.
+        if (config.setup() != null) {
+            banner();
+            System.exit(Setup.run(Path.of("").toAbsolutePath(), config.setup(), config.dryRun()));
+            return;
+        }
 
         banner();
 
@@ -162,7 +190,17 @@ public final class Kangaroo {
                             config.modelName().isBlank() ? "local-model" : config.modelName())));
         }
 
-        NativeEngine.ifConfigured(config.model(), config.projector()).ifPresent(rungs::add);
+        // An explicit --model always wins. Otherwise look where --setup puts things, so the
+        // documented start command stays the same whether or not a model has been downloaded.
+        Path root = Path.of("").toAbsolutePath();
+        Path model = config.model() != null
+                ? config.model()
+                : Manifest.installedModel(root).orElse(null);
+        Path projector = config.projector() != null
+                ? config.projector()
+                : Manifest.installedProjector(root).orElse(null);
+
+        NativeEngine.ifConfigured(model, projector).ifPresent(rungs::add);
 
         rungs.add(new DeterministicEngine());
         return new FailoverEngine(rungs);
@@ -234,10 +272,22 @@ public final class Kangaroo {
         }
         System.out.println();
 
-        if (!NativeRuntime.available()) {
+        // Whether an on-device rung exists is the question, and it has two independent answers:
+        // the native libraries, and the weights. Reporting on the libraries alone told someone who
+        // had run '--setup runtime' that everything was fine while there was still no model.
+        boolean nativeRung = engines.status().stream()
+                .anyMatch(r -> r.rung() == Rung.NATIVE && r.available());
+        if (!nativeRung) {
             System.out.println("  No on-device model configured. This is a supported configuration:");
             System.out.println("  the deterministic WHO engine and the gradient-boosted head need");
             System.out.println("  nothing but the JDK, and still produce a valid classification.");
+            System.out.println();
+            if (NativeRuntime.available()) {
+                System.out.println("  The native runtime is installed but no model was found.");
+                System.out.println("  To fetch the pinned one:  kangaroo --setup model");
+            } else {
+                System.out.println("  To add the optional model rung:  kangaroo --setup");
+            }
             System.out.println();
         }
         System.out.println("  Ctrl-C to stop.");
@@ -263,6 +313,12 @@ public final class Kangaroo {
         System.out.println("""
                 Usage: kangaroo [options]
 
+                  --setup [what]      download the optional on-device model and native runtime,
+                                      then exit. 'what' is all (default), runtime or model.
+                                      Everything is pinned and SHA-256 checked, and an
+                                      interrupted download resumes. Add --dry-run to see the
+                                      plan and the download size without fetching anything.
+
                   --port <n>          HTTP port (default 8443)
                   --bind <addr>       interface to bind (default 127.0.0.1)
                   --lan               bind every interface, so phones on this network can pair
@@ -284,8 +340,10 @@ public final class Kangaroo {
                 assessment offline, using only the deterministic rule engine and the pure-Java
                 gradient-boosted head.
 
-                The native libraries for --model are found via ./runtime/bin or
-                -Dkangaroo.native.dir=<dir>. See README, 'Optional: the on-device model'.
+                --model and --projector default to whatever './kangaroo --setup' installed under
+                ./runtime/models, so the start command is the same before and after setup. The
+                native libraries are found via ./runtime/bin or -Dkangaroo.native.dir=<dir>.
+                See README, 'Optional: the on-device model'.
                 """);
     }
 
