@@ -1,0 +1,145 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="880" viewBox="0 0 1100 880"
+     role="img" aria-label="Kangaroo system architecture and inference ladder">
+  <title>Kangaroo — system architecture</title>
+  <desc>
+    One Java 26 process. Requests arrive on a virtual thread each, fan out into four evidence passes
+    under one StructuredTaskScope deadline, are classified by a deterministic WHO rule with a
+    gradient-boosted head alongside it, and are narrated by whichever rung of the inference ladder is
+    reachable. The traffic light is decided before the ladder is consulted, so descending the ladder
+    degrades the prose and nothing else.
+  </desc>
+
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155"/>
+    </marker>
+    <style>
+      .t      { font-family: "Segoe UI", Roboto, "Helvetica Neue", sans-serif; fill: #0f172a; }
+      .title  { font-size: 21px; font-weight: 700; }
+      .sub    { font-size: 13px; fill: #475569; }
+      .band   { font-size: 12px; font-weight: 700; fill: #64748b; letter-spacing: 1.2px; }
+      .lbl    { font-size: 14px; font-weight: 600; }
+      .note   { font-size: 12px; fill: #475569; }
+      .mono   { font-family: Consolas, "SF Mono", Menlo, monospace; font-size: 12px; fill: #334155; }
+      .proc   { fill: #f8fafc; stroke: #94a3b8; stroke-width: 2.5; rx: 12; }
+      .box    { fill: #ffffff; stroke: #334155; stroke-width: 2; rx: 8; }
+      .pass   { fill: #eff6ff; stroke: #1d4ed8; stroke-width: 2; rx: 8; }
+      .rule   { fill: #f0fdf4; stroke: #15803d; stroke-width: 2.5; rx: 8; }
+      .rung   { fill: #ffffff; stroke: #64748b; stroke-width: 2; rx: 8; }
+      .floor  { fill: #dcfce7; stroke: #15803d; stroke-width: 2.5; rx: 8; }
+      .wire   { stroke: #334155; stroke-width: 2; fill: none; }
+      .wireLbl{ font-size: 11px; font-weight: 600; fill: #475569; }
+    </style>
+  </defs>
+
+  <rect width="1100" height="880" fill="#ffffff"/>
+
+  <text class="t title" x="34" y="40">Kangaroo — one Java 26 process, zero runtime dependencies</text>
+  <text class="t sub"   x="34" y="62">The runtime dependency set is exactly the JDK. The build fails if anything reaches compile or runtime scope.</text>
+
+  <!-- clients -->
+  <rect class="box" x="34" y="88" width="1032" height="62"/>
+  <text class="t lbl"  x="54" y="116">Phone browser · tablet · laptop</text>
+  <text class="t note" x="54" y="136">Camera · microphone · torch. Installable PWA, served from inside the JAR — no Node, no build step.</text>
+  <text class="t mono" x="820" y="126">LAN or localhost</text>
+
+  <path class="wire" d="M 550 150 L 550 186" marker-end="url(#a)"/>
+
+  <!-- the process -->
+  <rect class="proc" x="34" y="186" width="1032" height="600"/>
+
+  <!-- http band -->
+  <text class="t band" x="54" y="216">HTTP</text>
+  <rect class="box" x="140" y="196" width="906" height="52"/>
+  <text class="t lbl"  x="160" y="220">jdk.httpserver · virtual thread per request</text>
+  <text class="t note" x="160" y="238">A request blocked in a model for eight seconds costs a few hundred bytes, not a pooled platform thread. JEP 444.</text>
+
+  <path class="wire" d="M 550 248 L 550 282" marker-end="url(#a)"/>
+
+  <!-- orchestrate band -->
+  <text class="t band" x="54" y="312">ORCHESTRATE</text>
+  <rect class="box" x="140" y="282" width="906" height="128"/>
+  <text class="t lbl"  x="160" y="306">StructuredTaskScope — one deadline, one cancellation domain</text>
+  <text class="t note" x="160" y="324">JEP 525. A slow visual pass cannot eat the audio pass's budget, and an abandoned encounter leaves no orphan threads.</text>
+
+  <rect class="pass" x="164" y="338" width="196" height="56"/>
+  <text class="t lbl"  x="182" y="362">Visual</text>
+  <text class="t note" x="182" y="380">colorimetry · Kramer zones</text>
+
+  <rect class="pass" x="382" y="338" width="196" height="56"/>
+  <text class="t lbl"  x="400" y="362">Audio</text>
+  <text class="t note" x="400" y="380">capture · gap reported</text>
+
+  <rect class="pass" x="600" y="338" width="196" height="56"/>
+  <text class="t lbl"  x="618" y="362">Vitals</text>
+  <text class="t note" x="618" y="380">rate · weight · temp</text>
+
+  <rect class="pass" x="818" y="338" width="204" height="56"/>
+  <text class="t lbl"  x="836" y="362">History</text>
+  <text class="t note" x="836" y="380">longitudinal trend</text>
+
+  <path class="wire" d="M 550 410 L 550 444" marker-end="url(#a)"/>
+  <text class="t wireLbl" x="560" y="432">one shared SignProfile</text>
+
+  <!-- decision band -->
+  <text class="t band" x="54" y="474">DECIDE</text>
+  <rect class="rule" x="140" y="444" width="906" height="146"/>
+  <text class="t lbl"  x="160" y="468">The deterministic WHO rule is the floor. Nothing lowers it.</text>
+
+  <rect class="box" x="164" y="484" width="270" height="88"/>
+  <text class="t lbl"  x="182" y="508">ImnciRule</text>
+  <text class="t note" x="182" y="527">Exhaustive switch over sealed types.</text>
+  <text class="t note" x="182" y="545">A forgotten danger sign is a compile</text>
+  <text class="t note" x="182" y="563">error, not a field incident.</text>
+
+  <rect class="box" x="456" y="484" width="270" height="88"/>
+  <text class="t lbl"  x="474" y="508">Gradient-boosted head</text>
+  <text class="t note" x="474" y="527">Pure Java, bit-exact vs LightGBM</text>
+  <text class="t note" x="474" y="545">(1.1e-16 over 24,070 vectors).</text>
+  <text class="t note" x="474" y="563">May escalate. Never de-escalate.</text>
+
+  <rect class="box" x="748" y="484" width="274" height="88"/>
+  <text class="t lbl"  x="766" y="508">Clinical tools</text>
+  <text class="t note" x="766" y="527">Dosing with hard ceilings, z-score,</text>
+  <text class="t note" x="766" y="545">ORS, referral letter, follow-up.</text>
+  <text class="t note" x="766" y="563">Every number is arithmetic, not a model.</text>
+
+  <path class="wire" d="M 550 590 L 550 624" marker-end="url(#a)"/>
+  <text class="t wireLbl" x="560" y="612">traffic light already decided</text>
+
+  <!-- ladder band -->
+  <text class="t band" x="54" y="654">NARRATE</text>
+  <rect class="box" x="140" y="624" width="906" height="146"/>
+  <text class="t lbl"  x="160" y="648">The inference ladder — sealed InferenceEngine. It writes the prose, never the verdict.</text>
+
+  <rect class="rung" x="164" y="664" width="196" height="88"/>
+  <text class="t lbl"  x="182" y="688">Cloud</text>
+  <text class="t note" x="182" y="707">HTTP/3 → 2 → 1.1</text>
+  <text class="t note" x="182" y="725">QUIC survives loss and</text>
+  <text class="t note" x="182" y="743">cell handover. JEP 517.</text>
+
+  <rect class="rung" x="382" y="664" width="196" height="88"/>
+  <text class="t lbl"  x="400" y="688">LAN model server</text>
+  <text class="t note" x="400" y="707">OpenAI-compatible.</text>
+  <text class="t note" x="400" y="725">"The laptop in the next</text>
+  <text class="t note" x="400" y="743">room is the cloud."</text>
+
+  <rect class="rung" x="600" y="664" width="196" height="88"/>
+  <text class="t lbl"  x="618" y="688">On-device model</text>
+  <text class="t note" x="618" y="707">FFM → libllama.</text>
+  <text class="t note" x="618" y="725">No JNI anywhere in</text>
+  <text class="t note" x="618" y="743">the repository. JEP 454.</text>
+
+  <rect class="floor" x="818" y="664" width="204" height="88"/>
+  <text class="t lbl"  x="836" y="688">Deterministic</text>
+  <text class="t note" x="836" y="707">No network, no model,</text>
+  <text class="t note" x="836" y="725">no native library.</text>
+  <text class="t note" x="836" y="743">Always available.</text>
+
+  <path class="wire" d="M 360 708 L 382 708" marker-end="url(#a)"/>
+  <path class="wire" d="M 578 708 L 600 708" marker-end="url(#a)"/>
+  <path class="wire" d="M 796 708 L 818 708" marker-end="url(#a)"/>
+
+  <text class="t sub" x="34" y="822">Descending the ladder degrades the prose and nothing else — which is why the network cable can be pulled out on stage.</text>
+  <text class="t sub" x="34" y="846">Alongside: Ed25519 device identity in PEM (JEP 524) signs every record · JFR carries the clinical audit trail · WHO tables and both models are lazy constants (JEP 526).</text>
+</svg>

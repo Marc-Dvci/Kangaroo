@@ -187,6 +187,10 @@ in one instruction, so the select-and-compact pass stays branch-free.
 
 ## Architecture
 
+![Kangaroo system architecture](docs/system-architecture.svg)
+
+The same thing in ASCII, for anyone reading this in a terminal:
+
 ```
                     ┌──────────────────────────────────────┐
                     │  phone browser · tablet · laptop     │
@@ -557,6 +561,7 @@ kangaroo/
   tools/          parity generator · single-file JEP 458 diagnostic
   packaging/      AOT cache · jlink · GC benchmark · run scripts
   docs/           architecture · safety · fairness · i18n · colour card · demo script
+                  system-architecture.svg · pod-wiring.svg · colour-card.svg
 ```
 
 ---

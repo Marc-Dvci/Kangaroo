@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="760" viewBox="0 0 1100 760"
+     role="img" aria-label="Kangaroo Pod wiring diagram, Tier 1 bill of materials">
+  <title>Kangaroo Pod — Tier 1 wiring diagram</title>
+  <desc>
+    Block wiring diagram for the Tier 1 "Pod": a Raspberry Pi 5 running the Kangaroo JAR as a
+    self-contained village clinic server, powered from a USB-C PD bank with optional solar, serving
+    phones over its own hostapd access point. No connection to the internet is required at any point.
+  </desc>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155"/>
+    </marker>
+    <marker id="arrowPower" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b45309"/>
+    </marker>
+    <marker id="arrowRf" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#0e7490"/>
+    </marker>
+    <style>
+      .box   { fill: #ffffff; stroke: #334155; stroke-width: 2; rx: 8; }
+      .pi    { fill: #fdf2f8; stroke: #9d174d; stroke-width: 2.5; rx: 10; }
+      .pwr   { fill: #fffbeb; stroke: #b45309; stroke-width: 2; rx: 8; }
+      .rf    { fill: #ecfeff; stroke: #0e7490; stroke-width: 2; rx: 8; }
+      .t     { font-family: "Segoe UI", Roboto, "Helvetica Neue", sans-serif; fill: #0f172a; }
+      .title { font-size: 21px; font-weight: 700; }
+      .sub   { font-size: 13px; fill: #475569; }
+      .lbl   { font-size: 14px; font-weight: 600; }
+      .note  { font-size: 12px; fill: #475569; }
+      .wire      { stroke: #334155; stroke-width: 2; fill: none; }
+      .wirePower { stroke: #b45309; stroke-width: 3; fill: none; }
+      .wireRf    { stroke: #0e7490; stroke-width: 2; fill: none; stroke-dasharray: 7 5; }
+      .wireLbl   { font-size: 12px; font-weight: 600; }
+      .legendBox { fill: #f8fafc; stroke: #cbd5e1; stroke-width: 1.5; rx: 6; }
+    </style>
+  </defs>
+
+  <rect width="1100" height="760" fill="#ffffff"/>
+
+  <text class="t title" x="34" y="42">Kangaroo Pod — Tier 1 wiring</text>
+  <text class="t sub"   x="34" y="64">A village clinic in a lunchbox. ~£190 one-off, serves a dozen phones, runs a clinic day off-grid.</text>
+  <text class="t sub"   x="34" y="84">Nothing in this diagram requires a route to the internet.</text>
+
+  <!-- ============================ POWER CHAIN ============================ -->
+  <rect class="pwr" x="34" y="132" width="196" height="86"/>
+  <text class="t lbl"  x="50" y="162">20 W folding solar</text>
+  <text class="t note" x="50" y="182">USB-C output, optional</text>
+  <text class="t note" x="50" y="200">recharges bank in ~6 h sun</text>
+
+  <rect class="pwr" x="34" y="268" width="196" height="100"/>
+  <text class="t lbl"  x="50" y="298">20,000 mAh PD bank</text>
+  <text class="t note" x="50" y="318">~74 Wh at 5 V</text>
+  <text class="t note" x="50" y="336">8–20 h depending on load</text>
+  <text class="t note" x="50" y="354">pass-through charging</text>
+
+  <rect class="pwr" x="34" y="418" width="196" height="86"/>
+  <text class="t lbl"  x="50" y="448">27 W USB-C PSU</text>
+  <text class="t note" x="50" y="468">mains, when mains exists</text>
+  <text class="t note" x="50" y="486">official Pi 5 supply</text>
+
+  <path class="wirePower" d="M 132 218 L 132 268" marker-end="url(#arrowPower)"/>
+  <path class="wirePower" d="M 230 318 L 300 318 L 300 372" marker-end="url(#arrowPower)"/>
+  <path class="wirePower" d="M 230 461 L 300 461 L 300 410" marker-end="url(#arrowPower)"/>
+  <text class="t wireLbl" x="238" y="300" fill="#b45309">5 V / 3 A USB-C</text>
+
+  <!-- ============================ THE PI ============================ -->
+  <rect class="pi" x="326" y="252" width="330" height="248"/>
+  <text class="t title" x="346" y="284" font-size="18">Raspberry Pi 5 — 8 GB</text>
+  <text class="t note"  x="346" y="304">aarch64 · 64-bit Raspberry Pi OS</text>
+
+  <line x1="346" y1="318" x2="636" y2="318" stroke="#f9a8d4" stroke-width="1.5"/>
+
+  <text class="t lbl"  x="346" y="342">JDK 26 (aarch64) + kangaroo.jar</text>
+  <text class="t note" x="346" y="362">systemd unit → packaging/run.sh</text>
+  <text class="t note" x="346" y="380">--enable-preview  --add-modules jdk.incubator.vector</text>
+  <text class="t note" x="346" y="398">-XX:AOTCache=kangaroo.aot   (JEP 516)</text>
+  <text class="t note" x="346" y="416">-XX:+UseG1GC                (JEP 522)</text>
+
+  <line x1="346" y1="430" x2="636" y2="430" stroke="#f9a8d4" stroke-width="1.5"/>
+
+  <text class="t note" x="346" y="452">Active cooler on GPIO fan header — the Pi 5</text>
+  <text class="t note" x="346" y="470">throttles hard without one.</text>
+  <text class="t note" x="346" y="488">Idle ~3 W · peak ~9 W under inference.</text>
+
+  <!-- NVMe -->
+  <rect class="box" x="326" y="560" width="330" height="92"/>
+  <text class="t lbl"  x="346" y="588">NVMe HAT + 256 GB NVMe SSD</text>
+  <text class="t note" x="346" y="608">PCIe via the Pi 5 FPC connector</text>
+  <text class="t note" x="346" y="626">Signed encounter store + JFR audit trail.</text>
+  <text class="t note" x="346" y="644">An SD card works but wears out under write load.</text>
+  <path class="wire" d="M 491 500 L 491 560" marker-end="url(#arrow)"/>
+  <text class="t wireLbl" x="500" y="534">PCIe</text>
+
+  <!-- ============================ RADIO ============================ -->
+  <rect class="rf" x="752" y="132" width="314" height="120"/>
+  <text class="t lbl"  x="772" y="162">hostapd access point</text>
+  <text class="t note" x="772" y="182">The Pi's own Wi-Fi, no router, no SIM.</text>
+  <text class="t note" x="772" y="200">Phones join it directly and open a URL.</text>
+  <text class="t note" x="772" y="218">Kangaroo binds with --lan on port 8443.</text>
+  <text class="t note" x="772" y="238">The PWA installs to the home screen.</text>
+
+  <path class="wireRf" d="M 656 300 L 704 300 L 704 192 L 752 192" marker-end="url(#arrowRf)"/>
+  <text class="t wireLbl" x="664" y="284" fill="#0e7490">Wi-Fi</text>
+
+  <!-- phones -->
+  <rect class="box" x="752" y="292" width="314" height="128"/>
+  <text class="t lbl"  x="772" y="322">Up to ~12 phones — Tier 0</text>
+  <text class="t note" x="772" y="342">Camera · microphone · torch · screen.</text>
+  <text class="t note" x="772" y="360">Each is a client; the Pod is the compute.</text>
+  <text class="t note" x="772" y="378">Virtual thread per request, so a dozen</text>
+  <text class="t note" x="772" y="396">concurrent assessments cost a dozen</text>
+  <text class="t note" x="772" y="414">continuations, not a dozen OS threads.</text>
+  <path class="wireRf" d="M 909 252 L 909 292" marker-end="url(#arrowRf)"/>
+
+  <!-- sensors -->
+  <rect class="box" x="752" y="460" width="314" height="192"/>
+  <text class="t lbl"  x="772" y="490">Tier 2 — Bluetooth GATT sensors</text>
+  <text class="t note" x="772" y="512">Standard profiles, so any compliant device works.</text>
+  <text class="t note" x="772" y="536">Pulse oximeter, neonatal probe — 0x1822</text>
+  <text class="t note" x="772" y="558">Infrared thermometer — 0x1809</text>
+  <text class="t note" x="772" y="580">Infant scale — 0x181D</text>
+  <text class="t note" x="772" y="606">Read by the phone over Web Bluetooth, or</text>
+  <text class="t note" x="772" y="624">natively by the Pod. Each replaces an estimate</text>
+  <text class="t note" x="772" y="642">with a measurement; none unlocks the protocol.</text>
+  <path class="wireRf" d="M 909 420 L 909 460" marker-end="url(#arrowRf)"/>
+  <text class="t wireLbl" x="918" y="446" fill="#0e7490">BLE</text>
+
+  <!-- colour card -->
+  <rect class="box" x="34" y="560" width="256" height="92"/>
+  <text class="t lbl"  x="52" y="588">Tier 0.5 — printed colour card</text>
+  <text class="t note" x="52" y="608">One sheet of matte A4, ~£0.05.</text>
+  <text class="t note" x="52" y="626">Known white + grey ramp in frame, so the</text>
+  <text class="t note" x="52" y="644">illuminant is divided out before grading.</text>
+  <path class="wire" d="M 290 600 L 326 600" marker-end="url(#arrow)"/>
+
+  <!-- ============================ LEGEND ============================ -->
+  <rect class="legendBox" x="34" y="676" width="1032" height="56"/>
+  <line x1="56"  y1="704" x2="106" y2="704" class="wirePower"/>
+  <text class="t note" x="116" y="709">USB-C power</text>
+  <line x1="236" y1="704" x2="286" y2="704" class="wire"/>
+  <text class="t note" x="296" y="709">wired data (PCIe / physical)</text>
+  <line x1="486" y1="704" x2="536" y2="704" class="wireRf"/>
+  <text class="t note" x="546" y="709">radio (Wi-Fi / Bluetooth)</text>
+  <text class="t note" x="768" y="709">Tier 0 alone is a complete product. Every tier above it is optional.</text>
+</svg>

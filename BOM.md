@@ -54,6 +54,8 @@ producing a number it cannot stand behind.
 A village clinic in a lunchbox. Its own Wi-Fi access point, serves a dozen phones, runs for a day
 off-grid, and syncs when a signal appears.
 
+![Kangaroo Pod wiring diagram](docs/pod-wiring.svg)
+
 | Item | Quantity | Approx. cost | Notes |
 |---|---|---|---|
 | Raspberry Pi 5, 8 GB | 1 | £75 | 4 GB works; 8 GB is needed for a larger on-device model |
