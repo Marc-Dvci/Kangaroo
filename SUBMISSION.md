@@ -33,11 +33,14 @@ equipment. Both, at the moment it matters, are offline.
 One clinical engine, two front doors, and a deterministic floor under everything.
 
 - **Parent mode** — a two-minute check: plain language, a tap-to-count breathing measure, a
-  photograph against a printed colour card. It never says the baby is fine; it says nothing it can
-  see needs a clinician today, and always ships the return-immediately list.
+  photograph against a printed colour card, ten seconds of the baby's cry. It never says the baby is
+  fine; it says nothing it can see needs a clinician today, always ships the return-immediately
+  list, and reads the plan aloud for anyone who does not read comfortably.
 - **Health-worker mode** — the full WHO IMNCI young-infant assessment, five deterministic clinical
   tools, the "referral not possible" branch that most tools omit, and a printable referral letter
   generated with the result.
+- **Three sensors, all already in the phone**: the camera drives colorimetric jaundice grading, the
+  microphone drives cry acoustics, and the screen drives a tap-to-count respiratory rate.
 - **A failover ladder** from HTTP/3 cloud models down to deterministic WHO rules that need no
   network, no model and no native library. **It never goes dark.**
 
@@ -68,8 +71,12 @@ The running application serves this table at `GET /api/jeps`.
 
 ### Functionality and stability
 
-Works end to end. 69 tests, all green, on four platforms in CI. Verified live:
+Works end to end. 92 tests, all green, on four platforms in CI. Verified live:
 
+- `--setup` fetching, verifying and unpacking the native runtime, then the application finding it
+  with no flags changed.
+- The cry pass measuring a 500 Hz cry as normal and a 1000 Hz one as a danger sign, refusing a
+  silent clip, and refusing a quiet room rather than calling it an absent cry.
 - A 7.5 B-parameter vision model loaded and generating **in-process through FFM**, text and images.
 - The failover ladder descending from a live-but-model-less server to the deterministic rung and
   still producing a complete, correct referral.
@@ -121,7 +128,7 @@ No figure here is an estimate, and every one of them is reproducible from a clea
 - **409 ms → 351 ms (14%)** — cold start to first completed assessment with the JEP 516 AOT cache,
   best of seven each way. Reproduce with `./packaging/aot.sh`.
 - **Under 1 ms** — offline assessment latency on a laptop.
-- **69 / 69** — tests green on Linux x64, Linux arm64, macOS arm64 and Windows in CI.
+- **92 / 92** — tests green on Linux x64, Linux arm64, macOS arm64 and Windows in CI.
 
 Six real defects were caught by this suite during development and are now named regression tests,
 including a NaN weight propagating to a NaN dose and a canonical-serialisation bug that silently

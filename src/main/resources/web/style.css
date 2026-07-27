@@ -149,6 +149,9 @@ main {
 @media (prefers-reduced-motion: reduce) {
   .screen.active { animation: none; }
   * { transition: none !important; }
+  /* The recording indicator still has to read as "recording" without the pulse, which is why the
+     dot also changes colour and shape rather than only blinking. */
+  .cry-record.recording .cry-dot { animation: none; }
 }
 
 .lede { color: var(--ink-soft); margin: 0 0 1.5rem; }
@@ -266,6 +269,44 @@ input:focus-visible, textarea:focus-visible, button:focus-visible, select:focus-
 
 .breath-meta { flex: 1 1 8rem; display: flex; flex-direction: column; gap: .5rem; align-items: flex-start; }
 .breath-timer { font-size: 1.3rem; font-weight: 640; font-variant-numeric: tabular-nums; }
+
+/* ─────────────────────────────── the cry recording ─────────────────────────────── */
+
+.cry { display: flex; align-items: center; gap: 1.1rem; flex-wrap: wrap; }
+
+.cry-record {
+  min-height: 64px; padding: 0 1.4rem; border-radius: 14px; flex: 0 0 auto;
+  border: 3px solid var(--accent); background: var(--surface);
+  display: inline-flex; align-items: center; gap: .7rem; cursor: pointer;
+  color: var(--ink); font: inherit; font-weight: 640; font-size: 1.02rem;
+  transition: transform .07s ease;
+}
+.cry-record:active { transform: scale(.98); }
+
+/* The recording state is carried by the dot's shape as well as its colour, for the same reason the
+   traffic light is: colour alone is not an accessible signal. */
+.cry-dot { width: 16px; height: 16px; border-radius: 50%; flex: 0 0 auto; background: var(--ink-faint); }
+.cry-record.recording { border-color: var(--red); }
+.cry-record.recording .cry-dot { background: var(--red); animation: cry-pulse 1s ease-in-out infinite; }
+.cry-record.has-audio { border-color: var(--green); }
+.cry-record.has-audio .cry-dot { background: var(--green); border-radius: 3px; }
+
+@keyframes cry-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+
+.cry-meta { flex: 1 1 6rem; display: flex; align-items: center; gap: .8rem; }
+.cry-timer { font-size: 1.3rem; font-weight: 640; font-variant-numeric: tabular-nums; }
+
+.cry-level {
+  height: 8px; border-radius: 4px; background: var(--bg);
+  border: 1px solid var(--line); overflow: hidden; margin-top: .8rem;
+}
+.cry-level > span { display: block; height: 100%; width: 0; background: var(--accent); transition: width .1s linear; }
+
+/* ─────────────────────────────── read the plan aloud ─────────────────────────────── */
+
+.card-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.card-head h2 { margin: 0; }
+.speak-btn { flex: 0 0 auto; }
 
 /* ─────────────────────────────── captures ─────────────────────────────── */
 

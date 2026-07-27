@@ -56,9 +56,9 @@ Dependencies point downward only. `core` knows about nothing; `app` knows about 
       ├─ StructuredTaskScope, one deadline, one cancellation domain ─────┐
       │                                                                  │
       │   Visual pass        Audio pass      Vitals pass    History pass │
-      │   decode frame       cry recording   text + vitals  trend across │
-      │   colour pipeline    (not graded)    extraction     prior visits │
-      │   Kramer zones                                                   │
+      │   decode frame       decode WAV      text + vitals  trend across │
+      │   colour pipeline    pitch, voicing  extraction     prior visits │
+      │   Kramer zones       refuse if unclear                           │
       │        │                  │              │              │        │
       └────────┴──────────────────┴──────────────┴──────────────┘        │
                                   │                                      │
@@ -91,7 +91,7 @@ photograph says otherwise, the photograph may simply be badly lit.
 
 ### Why a failed pass is a gap, not a failure
 
-Losing the cry classifier should not deny a health worker the twenty other danger signs that were
+Losing the cry analysis should not deny a health worker the twenty other danger signs that were
 assessed fine. A failed or timed-out pass is recorded as a gap in the evidence; in parent mode a gap
 escalates rather than being ignored, because there is no trained observer to have noticed what the
 missing pass would have caught.
