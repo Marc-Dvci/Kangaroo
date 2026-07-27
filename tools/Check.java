@@ -158,13 +158,47 @@ void main() {
 
     IO.println("");
 
-    // The Vector API is an incubator module and needs an extra flag, so its absence is reported
-    // rather than treated as a failure. Kangaroo falls back to the scalar pipeline without it.
-    boolean vector = ModuleLayer.boot().findModule("jdk.incubator.vector").isPresent();
-    IO.println(vector
-            ? "  note   JEP 529 Vector API module is present."
-            : "  note   JEP 529 Vector API not resolved. Add --add-modules jdk.incubator.vector.");
-    IO.println("         Kangaroo runs without it, on the scalar colorimetry pipeline.");
+    // JEP 529 — the Vector API. It is an incubator module behind an extra flag, so its absence is
+    // reported rather than treated as a failure: Kangaroo falls back to the scalar colorimetry
+    // pipeline and still produces a valid classification.
+    //
+    // When it is present it gets exercised rather than merely detected. Reflection is what makes
+    // that possible from a file with no compile-time dependency on the incubator module, so the
+    // same source runs with and without --add-modules.
+    if (ModuleLayer.boot().findModule("jdk.incubator.vector").isPresent()) {
+        check("JEP 529  Vector API", failures, () -> {
+            Class<?> floatVector = Class.forName("jdk.incubator.vector.FloatVector");
+            Class<?> speciesType = Class.forName("jdk.incubator.vector.VectorSpecies");
+            Object species = floatVector.getField("SPECIES_PREFERRED").get(null);
+            int lanes = (int) speciesType.getMethod("length").invoke(species);
+
+            // Two lanes-wide vectors, added, then reduced: 1+2 summed lanewise is 3 per lane.
+            float[] a = new float[lanes];
+            float[] b = new float[lanes];
+            Arrays.fill(a, 1.0f);
+            Arrays.fill(b, 2.0f);
+
+            var fromArray = floatVector.getMethod("fromArray", speciesType, float[].class, int.class);
+            Object va = fromArray.invoke(null, species, a, 0);
+            Object vb = fromArray.invoke(null, species, b, 0);
+
+            Class<?> vectorType = Class.forName("jdk.incubator.vector.Vector");
+            Object sum = floatVector.getMethod("add", vectorType).invoke(va, vb);
+
+            Class<?> opType = Class.forName("jdk.incubator.vector.VectorOperators$Associative");
+            Object add = Class.forName("jdk.incubator.vector.VectorOperators").getField("ADD").get(null);
+            float total = (float) floatVector.getMethod("reduceLanes", opType).invoke(sum, add);
+
+            if (total != 3.0f * lanes) {
+                throw new AssertionError("lanewise add reduced to " + total + ", expected " + 3.0f * lanes);
+            }
+            int bits = (int) speciesType.getMethod("vectorBitSize").invoke(species);
+            return bits + "-bit species, " + lanes + " float lanes, add and reduce verified";
+        });
+    } else {
+        IO.println("  note   JEP 529 Vector API not resolved. Add --add-modules jdk.incubator.vector.");
+        IO.println("         Kangaroo runs without it, on the scalar colorimetry pipeline.");
+    }
 
     IO.println("");
     IO.println("=".repeat(56));

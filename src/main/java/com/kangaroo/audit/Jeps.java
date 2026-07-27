@@ -79,7 +79,7 @@ public final class Jeps {
                     true),
 
             new Use(516, "Ahead-of-Time Object Caching with Any GC", "Final",
-                    "packaging/aot.sh, packaging/aot.ps1",
+                    "packaging/aot.sh",
                     "A two-run training and use cycle produces an AOT cache shipped alongside the "
                     + "installer. JEP 516 is precisely what lifts the earlier GC restriction, so the "
                     + "cache and the production collector can be used together.",
@@ -92,7 +92,7 @@ public final class Jeps {
                     false),
 
             new Use(500, "Prepare to Make Final Mean Final", "Final",
-                    "pom.xml, packaging/run.sh",
+                    "packaging/run.sh, .github/workflows/build.yml",
                     "The application runs under --illegal-final-field-mutation=deny. For clinical "
                     + "software, 'no library can quietly mutate a final field in the dosing table' "
                     + "is a safety property rather than a checkbox.",
