@@ -1,0 +1,47 @@
+{
+  "amoxicillin_oral": {
+    "display_name": "Amoxicillin (oral suspension 250mg/5ml)",
+    "indication": "First-line antibiotic for PSBI when referral not feasible",
+    "mg_per_kg_per_dose": 25,
+    "doses_per_day": 2,
+    "concentration_mg_per_ml": 50,
+    "max_single_dose_mg": 250,
+    "duration_days": 7,
+    "route": "oral",
+    "instruction": "Give by mouth using oral syringe. Give during breastfeeding if possible.",
+    "source": "WHO PSBI simplified antibiotic regimen (2015)"
+  },
+  "gentamicin_im": {
+    "display_name": "Gentamicin (intramuscular injection 10mg/ml)",
+    "indication": "Part of WHO PSBI simplified antibiotic regimen",
+    "mg_per_kg_per_dose": 5,
+    "doses_per_day": 1,
+    "concentration_mg_per_ml": 10,
+    "max_single_dose_mg": 20,
+    "duration_days": 2,
+    "route": "intramuscular (anterolateral thigh)",
+    "instruction": "Inject into anterolateral thigh. ONLY by trained health worker.",
+    "source": "WHO PSBI simplified antibiotic regimen (2015)"
+  },
+  "procaine_penicillin_im": {
+    "display_name": "Procaine Benzylpenicillin (intramuscular)",
+    "indication": "Alternative when gentamicin not available",
+    "iu_per_kg_per_dose": 50000,
+    "doses_per_day": 1,
+    "concentration_iu_per_ml": 300000,
+    "max_single_dose_iu": 200000,
+    "duration_days": 7,
+    "route": "intramuscular (anterolateral thigh)",
+    "instruction": "Inject into anterolateral thigh. ONLY by trained health worker.",
+    "source": "WHO IMNCI Chart Booklet"
+  },
+  "chlorhexidine_topical": {
+    "display_name": "Chlorhexidine 7.1% gel (topical umbilical cord care)",
+    "indication": "Umbilical cord care in high-mortality settings",
+    "application": "Apply thin layer to umbilical stump and surrounding skin",
+    "frequency": "Once daily until cord falls off",
+    "route": "topical",
+    "instruction": "Wash hands before application. Apply to stump and 2cm surrounding skin.",
+    "source": "WHO recommendation for cord care (2013)"
+  }
+}

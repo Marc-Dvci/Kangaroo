@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f172a">
+<title>Kangaroo — newborn watch</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="stylesheet" href="/style.css">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="bar" role="banner">
+  <button class="bar-home" id="home-btn" aria-label="Back to start">
+    <span class="logo" aria-hidden="true"></span>
+    <span class="wordmark">Kangaroo</span>
+  </button>
+  <div class="bar-status">
+    <span class="badge" id="rung-badge" title="Which part of the system answered">checking…</span>
+    <label class="lang" for="lang-select">
+      <span class="visually-hidden">Language for the advice</span>
+      <select class="icon-btn" id="lang-select"></select>
+    </label>
+  </div>
+</header>
+
+<main id="main" role="main">
+
+  <!-- ─────────────────────────────── start ─────────────────────────────── -->
+  <section class="screen active" id="screen-start" aria-labelledby="start-h">
+    <h1 id="start-h">Who is checking this baby?</h1>
+    <p class="lede">
+      Kangaroo follows the World Health Organization's newborn danger-sign protocol.
+      It works with no signal and no internet connection.
+    </p>
+
+    <div class="door-grid">
+      <button class="door" data-mode="parent">
+        <span class="door-icon" aria-hidden="true">◍</span>
+        <span class="door-title">I am a parent</span>
+        <span class="door-sub">A two-minute check, in plain language. Nothing here is a diagnosis.</span>
+      </button>
+      <button class="door" data-mode="chw">
+        <span class="door-icon" aria-hidden="true">✚</span>
+        <span class="door-title">I am a health worker</span>
+        <span class="door-sub">The full IMNCI young-infant assessment, with tools and a referral letter.</span>
+      </button>
+    </div>
+
+    <details class="disclosure">
+      <summary>How this works, and what it cannot do</summary>
+      <div class="disclosure-body">
+        <p>
+          Kangaroo runs entirely on this device. Photographs are analysed here and are not stored
+          after the assessment. Nothing is sent anywhere unless you explicitly allow it.
+        </p>
+        <p>
+          It <strong>cannot</strong> examine a baby. It reads what you tell it and what a camera can
+          see, applies the WHO protocol, and tells you what that protocol says. It never says a baby
+          is fine — it says whether anything it can see needs a clinician.
+        </p>
+        <p class="muted">
+          Decision support only. It does not replace clinical judgement.
+          <a href="#" data-nav="tech">Technical details</a>
+        </p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ─────────────────────────────── check ─────────────────────────────── -->
+  <section class="screen" id="screen-check" aria-labelledby="check-h">
+    <h1 id="check-h">The check</h1>
+    <ol class="steps" id="step-rail" aria-label="Progress"></ol>
+
+    <form id="check-form" novalidate>
+
+      <fieldset class="card">
+        <legend>About the baby</legend>
+        <div class="field-row">
+          <label class="field">
+            <span class="field-label">Age in days</span>
+            <input type="number" name="age_days" min="0" max="28" inputmode="numeric"
+                   placeholder="e.g. 6" autocomplete="off">
+          </label>
+          <label class="field">
+            <span class="field-label">Weight in kg <span class="optional">optional</span></span>
+            <input type="number" name="weight_kg" min="0.5" max="10" step="0.01" inputmode="decimal"
+                   placeholder="e.g. 3.2" autocomplete="off">
+          </label>
+        </div>
+        <div class="field-row">
+          <fieldset class="segmented">
+            <legend class="field-label">Sex</legend>
+            <label><input type="radio" name="sex" value="female" checked><span>Girl</span></label>
+            <label><input type="radio" name="sex" value="male"><span>Boy</span></label>
+          </fieldset>
+          <label class="check">
+            <input type="checkbox" name="preterm">
+            <span>Born early (before 37 weeks)</span>
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset class="card">
+        <legend id="intake-legend">What is worrying you?</legend>
+        <p class="hint" id="intake-hint">
+          Use your own words. Say what changed, and when it started.
+        </p>
+        <textarea name="intake_text" rows="5" id="intake"
+                  placeholder="She has been very sleepy since last night and is feeding less than usual…"></textarea>
+        <div class="chips" id="quick-chips" aria-label="Common findings"></div>
+      </fieldset>
+
+      <fieldset class="card">
+        <legend>Breathing</legend>
+        <p class="hint">
+          Watch the baby's chest for a full minute while they are calm. Tap once for every breath.
+        </p>
+        <div class="breath">
+          <button type="button" class="breath-tap" id="breath-tap">
+            <span class="breath-count" id="breath-count">0</span>
+            <span class="breath-hint">tap for each breath</span>
+          </button>
+          <div class="breath-meta">
+            <div class="breath-timer" id="breath-timer">60s</div>
+            <button type="button" class="ghost" id="breath-reset">Reset</button>
+            <p class="muted small" id="breath-result" aria-live="polite"></p>
+          </div>
+        </div>
+        <input type="hidden" name="respiratory_rate" id="respiratory_rate" value="">
+      </fieldset>
+
+      <fieldset class="card">
+        <legend>Photographs</legend>
+        <p class="hint" id="capture-hint">
+          Hold the printed colour card beside the baby's skin, in the best light you have.
+        </p>
+        <div class="captures" id="captures"></div>
+        <input type="file" id="capture-input" accept="image/*" capture="environment" hidden>
+        <p class="muted small">
+          Photographs are analysed on this device and are not kept after the assessment.
+        </p>
+      </fieldset>
+
+      <fieldset class="card" id="privacy-card">
+        <legend>Privacy</legend>
+        <label class="check">
+          <input type="checkbox" name="privacy_local" id="privacy_local" checked>
+          <span>Keep this entirely on this device. Never send it anywhere.</span>
+        </label>
+        <p class="muted small">
+          When this is on, Kangaroo will not use a cloud model even if one is configured.
+        </p>
+      </fieldset>
+
+      <div class="actions">
+        <button type="submit" class="primary big" id="assess-btn">
+          <span class="btn-label">Check this baby</span>
+          <span class="spinner" hidden aria-hidden="true"></span>
+        </button>
+        <p class="muted small centred" id="assess-note">
+          Works with no signal. Usually takes a few seconds.
+        </p>
+      </div>
+    </form>
+  </section>
+
+  <!-- ─────────────────────────────── result ─────────────────────────────── -->
+  <section class="screen" id="screen-result" aria-labelledby="result-h" tabindex="-1">
+    <div class="verdict" id="verdict">
+      <div class="verdict-light" id="verdict-light" aria-hidden="true"></div>
+      <h1 id="result-h" class="verdict-headline">—</h1>
+      <p class="verdict-classification" id="verdict-classification"></p>
+    </div>
+
+    <div class="card" id="reasons-card">
+      <h2>Why</h2>
+      <ul class="reasons" id="reasons"></ul>
+    </div>
+
+    <div class="card" id="narrative-card">
+      <h2>What to do</h2>
+      <div class="narrative" id="narrative"></div>
+    </div>
+
+    <div class="card" id="jaundice-card" hidden>
+      <h2>Skin colour</h2>
+      <div id="jaundice"></div>
+    </div>
+
+    <div class="card" id="referral-card" hidden>
+      <h2>Referral letter</h2>
+      <p class="hint">Take this with you. Show it to whoever sees the baby.</p>
+      <pre class="letter" id="referral"></pre>
+      <button class="ghost" id="print-btn">Print</button>
+    </div>
+
+    <details class="card disclosure" id="how-decided">
+      <summary>How this was decided</summary>
+      <div class="disclosure-body" id="decision-trace"></div>
+    </details>
+
+    <div class="actions">
+      <button class="primary" id="again-btn">Check another baby</button>
+      <button class="ghost" id="edit-btn">Change my answers</button>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────── technical ─────────────────────────────── -->
+  <section class="screen" id="screen-tech" aria-labelledby="tech-h">
+    <h1 id="tech-h">Under the hood</h1>
+    <p class="lede">
+      Kangaroo is written entirely in Java 26. This page is served by the same process that
+      runs the models, and everything on it is measured live on this machine.
+    </p>
+
+    <div class="card">
+      <h2>This machine</h2>
+      <dl class="kv" id="tech-status"></dl>
+    </div>
+
+    <div class="card">
+      <h2>Colorimetry: SIMD versus scalar</h2>
+      <p class="hint">
+        The colour pipeline is three passes over a quarter of a million pixels. Both
+        implementations are shipped; this measures them here, now.
+      </p>
+      <button class="ghost" id="bench-btn">Run the benchmark</button>
+      <div id="bench-result" aria-live="polite"></div>
+    </div>
+
+    <div class="card">
+      <h2>Every JDK 26 JEP, and where it lives</h2>
+      <div id="jep-list"></div>
+    </div>
+  </section>
+
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="/app.js" type="module"></script>
+</body>
+</html>

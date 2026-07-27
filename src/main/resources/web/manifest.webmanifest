@@ -1,0 +1,15 @@
+{
+  "name": "Kangaroo — newborn watch",
+  "short_name": "Kangaroo",
+  "description": "Offline WHO newborn danger-sign checks for parents and community health workers.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f7f7f5",
+  "theme_color": "#0f172a",
+  "categories": ["health", "medical"],
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

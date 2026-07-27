@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="210mm" height="297mm" viewBox="0 0 210 297"
+     role="img" aria-label="Kangaroo colour reference card, A4">
+  <title>Kangaroo colour-reference card</title>
+  <desc>
+    Print at 100% scale on matte A4. Cut out the central window. See docs/colour-card.md.
+    The white border is the primary neutral reference; the grey ramp checks tone response;
+    the skin strip and yellow patches are visual aids for the health worker.
+  </desc>
+
+  <!-- The page. Deliberately paper-white: nothing is printed here, so the white reference is
+       the paper itself rather than the printer's idea of white. -->
+  <rect width="210" height="297" fill="#ffffff"/>
+
+  <!-- Trim guide -->
+  <rect x="10" y="10" width="190" height="277" fill="none" stroke="#c8c8c8"
+        stroke-width="0.3" stroke-dasharray="2 2"/>
+
+  <text x="105" y="26" text-anchor="middle" font-family="Helvetica, Arial, sans-serif"
+        font-size="7" font-weight="600" fill="#1a1a1a">KANGAROO COLOUR CARD</text>
+  <text x="105" y="33" text-anchor="middle" font-family="Helvetica, Arial, sans-serif"
+        font-size="3.6" fill="#555555">Print at 100% on matte paper. Do not scale to fit.</text>
+
+  <!-- Alignment corners: high-contrast right angles the capture gate can find. -->
+  <g fill="#000000">
+    <path d="M18 42 h16 v3 h-13 v13 h-3 z"/>
+    <path d="M192 42 h-16 v3 h13 v13 h3 z"/>
+    <path d="M18 262 h16 v-3 h-13 v-13 h-3 z"/>
+    <path d="M192 262 h-16 v-3 h13 v-13 h3 z"/>
+  </g>
+
+  <!-- ── Grey ramp: five steps, 20% to 80%. Checks tone response, not just white point. ── -->
+  <g>
+    <text x="24" y="68" font-family="Helvetica, Arial, sans-serif" font-size="3.4" fill="#333333">
+      GREY RAMP — all five steps must be distinguishable
+    </text>
+    <rect x="24" y="71" width="32.4" height="20" fill="#cccccc"/>
+    <rect x="56.4" y="71" width="32.4" height="20" fill="#999999"/>
+    <rect x="88.8" y="71" width="32.4" height="20" fill="#666666"/>
+    <rect x="121.2" y="71" width="32.4" height="20" fill="#404040"/>
+    <rect x="153.6" y="71" width="32.4" height="20" fill="#1a1a1a"/>
+    <rect x="24" y="71" width="162" height="20" fill="none" stroke="#000000" stroke-width="0.3"/>
+  </g>
+
+  <!-- ── The window. Skin goes here, framed by white on all four sides. ── -->
+  <g>
+    <text x="24" y="103" font-family="Helvetica, Arial, sans-serif" font-size="3.4" fill="#333333">
+      CUT OUT THIS WINDOW — hold it flat against the baby's chest or forehead
+    </text>
+    <!-- The white surround is the primary reference: large, neutral, and in the same plane
+         and the same light as the skin. -->
+    <rect x="24" y="106" width="162" height="86" fill="#ffffff"
+          stroke="#000000" stroke-width="0.4"/>
+    <rect x="57" y="120" width="96" height="58" fill="#ffffff"
+          stroke="#000000" stroke-width="0.6" stroke-dasharray="3 2"/>
+    <text x="105" y="147" text-anchor="middle" font-family="Helvetica, Arial, sans-serif"
+          font-size="4.5" fill="#888888">CUT OUT</text>
+    <text x="105" y="154" text-anchor="middle" font-family="Helvetica, Arial, sans-serif"
+          font-size="3.2" fill="#aaaaaa">96 × 58 mm</text>
+  </g>
+
+  <!-- ── Skin-tone reference strip, spanning the Fitzpatrick range. ── -->
+  <g>
+    <text x="24" y="204" font-family="Helvetica, Arial, sans-serif" font-size="3.4" fill="#333333">
+      SKIN TONE REFERENCE — Fitzpatrick I to VI
+    </text>
+    <rect x="24" y="207" width="27" height="18" fill="#f5d9c4"/>
+    <rect x="51" y="207" width="27" height="18" fill="#e8bd9a"/>
+    <rect x="78" y="207" width="27" height="18" fill="#c99a6e"/>
+    <rect x="105" y="207" width="27" height="18" fill="#a2714b"/>
+    <rect x="132" y="207" width="27" height="18" fill="#6f4a2f"/>
+    <rect x="159" y="207" width="27" height="18" fill="#3d281a"/>
+    <rect x="24" y="207" width="162" height="18" fill="none" stroke="#000000" stroke-width="0.3"/>
+    <g font-family="Helvetica, Arial, sans-serif" font-size="3" fill="#555555" text-anchor="middle">
+      <text x="37.5" y="230">I</text>
+      <text x="64.5" y="230">II</text>
+      <text x="91.5" y="230">III</text>
+      <text x="118.5" y="230">IV</text>
+      <text x="145.5" y="230">V</text>
+      <text x="172.5" y="230">VI</text>
+    </g>
+  </g>
+
+  <!-- ── Yellow references. A visual aid, and a check the yellow axis is not clipped. ── -->
+  <g>
+    <text x="24" y="243" font-family="Helvetica, Arial, sans-serif" font-size="3.4" fill="#333333">
+      YELLOW REFERENCE — increasing jaundice
+    </text>
+    <rect x="24" y="246" width="54" height="16" fill="#fdf3d7"/>
+    <rect x="78" y="246" width="54" height="16" fill="#fae7a0"/>
+    <rect x="132" y="246" width="54" height="16" fill="#f4d354"/>
+    <rect x="24" y="246" width="162" height="16" fill="none" stroke="#000000" stroke-width="0.3"/>
+    <g font-family="Helvetica, Arial, sans-serif" font-size="3" fill="#555555" text-anchor="middle">
+      <text x="51" y="267">mild</text>
+      <text x="105" y="267">moderate</text>
+      <text x="159" y="267">marked</text>
+    </g>
+  </g>
+
+  <text x="105" y="279" text-anchor="middle" font-family="Helvetica, Arial, sans-serif"
+        font-size="3.2" fill="#777777">
+    Decision support only. Not a diagnosis. Replace this card when it becomes dirty or creased.
+  </text>
+  <text x="105" y="284" text-anchor="middle" font-family="Helvetica, Arial, sans-serif"
+        font-size="3.2" fill="#777777">
+    Do not use flash. Best light is indirect daylight.
+  </text>
+</svg>

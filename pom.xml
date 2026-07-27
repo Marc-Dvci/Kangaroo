@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.kangaroo</groupId>
+  <artifactId>kangaroo</artifactId>
+  <version>1.0.0</version>
+  <packaging>jar</packaging>
+
+  <name>Kangaroo</name>
+  <description>Offline newborn-watch platform for parents and community health workers, built entirely in Java 26</description>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+    <!-- Java 26. Everything in this project compiles and runs on release 26 and nothing older. -->
+    <maven.compiler.release>26</maven.compiler.release>
+    <java.version>26</java.version>
+
+    <junit.version>5.11.4</junit.version>
+
+    <!--
+      The JDK 26 feature flags this project depends on:
+        enable-preview                   JEP 525 Structured Concurrency, JEP 526 Lazy Constants,
+                                         JEP 530 Primitive Patterns, JEP 524 PEM Encodings
+        add-modules jdk.incubator.vector JEP 529 Vector API (11th incubator)
+    -->
+    <kangaroo.preview>--enable-preview</kangaroo.preview>
+    <kangaroo.vector>--add-modules=jdk.incubator.vector</kangaroo.vector>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-launcher</artifactId>
+      <version>1.11.4</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>kangaroo</finalName>
+    <plugins>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.13.0</version>
+        <configuration>
+          <release>26</release>
+          <compilerArgs>
+            <arg>${kangaroo.preview}</arg>
+            <arg>${kangaroo.vector}</arg>
+            <arg>-Xlint:all,-preview,-serial,-this-escape</arg>
+          </compilerArgs>
+          <showDeprecation>true</showDeprecation>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.5.2</version>
+        <configuration>
+          <argLine>${kangaroo.preview} ${kangaroo.vector} --enable-native-access=ALL-UNNAMED</argLine>
+          <useModulePath>false</useModulePath>
+          <trimStackTrace>false</trimStackTrace>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.4.2</version>
+        <configuration>
+          <archive>
+            <manifest>
+              <mainClass>com.kangaroo.app.Kangaroo</mainClass>
+            </manifest>
+            <manifestEntries>
+              <Enable-Native-Access>ALL-UNNAMED</Enable-Native-Access>
+              <Build-Jdk-Release>26</Build-Jdk-Release>
+            </manifestEntries>
+          </archive>
+        </configuration>
+      </plugin>
+
+      <!-- No shading, no dependency tree: the runtime dependency set is exactly the JDK. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>3.5.0</version>
+        <executions>
+          <execution>
+            <id>enforce-java-26-and-zero-runtime-deps</id>
+            <goals><goal>enforce</goal></goals>
+            <configuration>
+              <rules>
+                <requireJavaVersion>
+                  <version>[26,)</version>
+                  <message>Kangaroo requires JDK 26 or newer. See README "Building".</message>
+                </requireJavaVersion>
+                <bannedDependencies>
+                  <searchTransitive>true</searchTransitive>
+                  <excludes><exclude>*:*:*:*:compile</exclude><exclude>*:*:*:*:runtime</exclude></excludes>
+                  <message>Kangaroo ships zero runtime dependencies. The JDK is the whole stack.</message>
+                </bannedDependencies>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+    </plugins>
+  </build>
+</project>

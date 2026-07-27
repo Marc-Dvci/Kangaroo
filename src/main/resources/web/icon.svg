@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Kangaroo">
+  <!-- A parent's torso with an infant held skin-to-skin: kangaroo mother care, which is the
+       highest-impact, lowest-technology neonatal intervention there is, and the thing this
+       software is meant to sit alongside rather than above. -->
+  <rect width="512" height="512" rx="112" fill="#7a2f5f"/>
+  <path d="M150 392c0-92 44-150 106-150s106 58 106 150z" fill="#fbeef5" opacity=".22"/>
+  <circle cx="256" cy="176" r="62" fill="#fbeef5" opacity=".22"/>
+  <g fill="#fbeef5">
+    <circle cx="256" cy="268" r="44"/>
+    <path d="M212 300c0-8 6-14 14-14h60c8 0 14 6 14 14v52c0 24-20 44-44 44s-44-20-44-44z"/>
+  </g>
+  <path d="M168 300c22-16 40-22 88-22s66 6 88 22" stroke="#fbeef5" stroke-width="16"
+        stroke-linecap="round" fill="none" opacity=".5"/>
+</svg>
