@@ -586,6 +586,8 @@ function base64(bytes) {
 
 /* ─────────────────────────────── breathing counter ─────────────────────────────── */
 
+let finishBreathingNow = () => {};
+
 function setupBreathing() {
   const tap = $('#breath-tap');
   const count = $('#breath-count');
@@ -639,6 +641,11 @@ function setupBreathing() {
     tap.classList.remove('counting');
     updateSteps();
   }
+
+  // The counter is a sixty-second window by design. The scripted demo taps the real button the real
+  // number of times and then ends the window early, because the rate is the tap count and nobody
+  // watches a minute of silence in a two-minute film.
+  finishBreathingNow = finishBreathing;
 }
 
 /* ─────────────────────────────── draft persistence ─────────────────────────────── */
@@ -1027,6 +1034,63 @@ function init() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => { /* not fatal */ });
   }
+
+  if (new URLSearchParams(location.search).has('demo')) openDemoBridge();
+}
+
+/* ─────────────────────────────── the scripted demo ───────────────────────────────
+ *
+ * A deliberately narrow seam, opened only for ?demo=1.
+ *
+ * The demo drives this application for real: it clicks the real buttons, types into the real
+ * textarea and posts to the real /api/assess, so what a viewer sees on screen is the WHO engine and
+ * the gradient-boosted head actually running. What it cannot do through the DOM is hand the app a
+ * photograph, a cry recording and a chest-motion trace, because on a laptop there is no infant in
+ * front of the camera. That — and only that — is what this exposes.
+ *
+ * It is a module, so nothing here is reachable unless this function runs.
+ */
+function openDemoBridge() {
+  window.__kangaroo = {
+    finishBreathing: () => finishBreathingNow(),
+    setCapture(kind, dataUrl) {
+      state.captures.set(kind, dataUrl);
+      const tile = $(`.capture[data-kind="${kind}"]`);
+      if (tile) {
+        const name = tile.querySelector('.capture-name')?.textContent ?? kind;
+        tile.classList.add('filled');
+        tile.innerHTML = `<img alt="" src="${dataUrl}"><span class="capture-name">${name}</span>`;
+      }
+      updateSteps();
+    },
+    setCry(dataUrl, seconds) {
+      state.cry = dataUrl;
+      state.crySeconds = seconds;
+      $('#cry-record').classList.add('has-audio');
+      $('#cry-label').textContent = 'Recorded';
+      $('#cry-timer').textContent = `${Math.round(seconds)}s`;
+      $('#cry-result').textContent = 'Recorded. It will be graded on this device when you run the check.';
+      $('#cry-clear').hidden = false;
+    },
+    setMotion(signal, fps) {
+      state.motion = { signal, fps };
+      $('#motion-record').classList.add('has-data');
+      $('#motion-label').textContent = 'Captured';
+      $('#motion-result').textContent = 'Captured. The breathing rate will be measured on this device.';
+    },
+  };
+
+  document.documentElement.classList.add('demo-mode');
+
+  const css = document.createElement('link');
+  css.rel = 'stylesheet';
+  css.href = '/demo/demo.css';
+  document.head.appendChild(css);
+
+  const js = document.createElement('script');
+  js.type = 'module';
+  js.src = '/demo/demo.js';
+  document.body.appendChild(js);
 }
 
 document.addEventListener('DOMContentLoaded', init);

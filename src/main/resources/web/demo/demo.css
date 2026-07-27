@@ -1,0 +1,186 @@
+/*
+ * Kangaroo — the scripted demo overlay.
+ *
+ * Loaded only under ?demo=1. Nothing here touches the product's own stylesheet: the application
+ * underneath renders exactly as it does for a real user, and everything in this file sits above it.
+ *
+ * Designed to be screen-recorded at 1920x1080 and watched at small size on a contest page, so the
+ * caption type is larger than a UI would ever use and the contrast is absolute.
+ */
+
+:root {
+  --demo-ink: #f4f6fb;
+  --demo-bg: #070a12;
+  --demo-accent: #e79ac6;
+}
+
+/* Leave room for the caption bar so it never covers a control the demo is about to click. */
+html.demo-mode body { padding-bottom: 128px; }
+
+/* ─────────────────────────────── caption bar ─────────────────────────────── */
+
+#demo-captions {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 9000;
+  padding: 20px 28px calc(20px + env(safe-area-inset-bottom));
+  background: linear-gradient(to top, rgba(7, 10, 18, .97) 62%, rgba(7, 10, 18, 0));
+  color: var(--demo-ink);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  pointer-events: none;
+}
+
+#demo-caption-text {
+  max-width: 1080px; margin: 0 auto;
+  font-size: 1.45rem; line-height: 1.4; font-weight: 500;
+  text-align: center; text-wrap: balance;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, .8);
+  min-height: 2.8em;
+  display: flex; align-items: center; justify-content: center;
+}
+
+#demo-progress {
+  max-width: 1080px; margin: 14px auto 0;
+  height: 3px; border-radius: 2px; background: rgba(255, 255, 255, .16);
+  overflow: hidden;
+}
+#demo-progress > span {
+  display: block; height: 100%; width: 0;
+  background: var(--demo-accent);
+  transition: width .25s linear;
+}
+
+/* ─────────────────────────────── title cards ─────────────────────────────── */
+
+#demo-card {
+  position: fixed; inset: 0; z-index: 9500;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px; padding: 0 8vw 120px;
+  background: var(--demo-bg); color: var(--demo-ink);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  text-align: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity .5s ease;
+}
+#demo-card.visible { opacity: 1; }
+
+.demo-stat {
+  font-size: clamp(3rem, 9vw, 6.5rem); font-weight: 800; letter-spacing: -.03em; line-height: 1;
+  background: linear-gradient(100deg, #ffffff, var(--demo-accent));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.demo-stat-sub { font-size: clamp(1rem, 2.1vw, 1.45rem); opacity: .84; max-width: 30ch; }
+.demo-card-title { font-size: clamp(1.6rem, 4vw, 3rem); font-weight: 700; letter-spacing: -.02em; }
+.demo-card-line { font-size: clamp(1rem, 2vw, 1.35rem); opacity: .8; max-width: 40ch; }
+
+.demo-personas { display: flex; gap: clamp(20px, 6vw, 72px); margin-top: 26px; flex-wrap: wrap; justify-content: center; }
+.demo-persona { display: flex; flex-direction: column; align-items: center; gap: 8px; max-width: 20ch; }
+.demo-persona-icon {
+  width: 74px; height: 74px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 2rem;
+  background: rgba(231, 154, 198, .12); border: 2px solid rgba(231, 154, 198, .45);
+}
+.demo-persona-label { font-size: 1rem; font-weight: 600; }
+.demo-persona-sub { font-size: .84rem; opacity: .66; line-height: 1.4; }
+
+/* ─────────────────────────────── the start gate ─────────────────────────────── */
+
+#demo-gate {
+  position: fixed; inset: 0; z-index: 9999;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: var(--demo-bg); color: var(--demo-ink);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  text-align: center; transition: opacity .35s ease;
+}
+#demo-gate h1 { font-size: 2.4rem; margin: 14px 0 6px; letter-spacing: -.02em; }
+#demo-gate p { margin: 0 0 26px; opacity: .78; max-width: 46ch; line-height: 1.55; }
+#demo-gate .demo-logo {
+  width: 76px; height: 76px; border-radius: 24px;
+  background:
+    radial-gradient(circle at 62% 38%, var(--demo-accent) 0 34%, transparent 35%),
+    linear-gradient(150deg, rgba(231, 154, 198, .35), transparent 70%);
+  border: 2px solid var(--demo-accent);
+}
+#demo-start {
+  background: var(--demo-accent); color: #1a0a14; border: 0; border-radius: 999px;
+  padding: 16px 38px; font: inherit; font-size: 1.1rem; font-weight: 700; cursor: pointer;
+  box-shadow: 0 10px 34px rgba(231, 154, 198, .35);
+}
+#demo-gate .demo-hint { margin-top: 20px; font-size: .8rem; opacity: .55; }
+
+/* ─────────────────────────────── spotlight ─────────────────────────────── */
+
+/* Lifts one element above a dimming veil, so a viewer's eye lands where the narration is. */
+#demo-veil {
+  position: fixed; inset: 0; z-index: 8000;
+  background: rgba(4, 6, 12, .62);
+  opacity: 0; pointer-events: none; transition: opacity .35s ease;
+}
+#demo-veil.visible { opacity: 1; }
+
+.demo-spotlit {
+  position: relative; z-index: 8500;
+  border-radius: 16px;
+  box-shadow: 0 0 0 3px var(--demo-accent), 0 18px 60px rgba(0, 0, 0, .6);
+  transition: box-shadow .3s ease;
+}
+
+/* ─────────────────────────────── pointer ─────────────────────────────── */
+
+#demo-cursor {
+  position: fixed; z-index: 8800; top: 0; left: 0;
+  width: 26px; height: 26px; border-radius: 50%;
+  border: 2px solid var(--demo-accent);
+  background: rgba(231, 154, 198, .22);
+  pointer-events: none; opacity: 0;
+  transform: translate(-50%, -50%);
+  transition: opacity .25s ease, transform .12s ease;
+}
+#demo-cursor.visible { opacity: 1; }
+#demo-cursor.tapping { transform: translate(-50%, -50%) scale(.62); background: rgba(231, 154, 198, .55); }
+
+/* A ring that expands once where a tap landed. */
+.demo-ripple {
+  position: fixed; z-index: 8790; width: 26px; height: 26px; border-radius: 50%;
+  border: 2px solid var(--demo-accent); pointer-events: none;
+  transform: translate(-50%, -50%);
+  animation: demo-ripple 620ms ease-out forwards;
+}
+@keyframes demo-ripple {
+  to { transform: translate(-50%, -50%) scale(3.4); opacity: 0; }
+}
+
+/* ─────────────────────────────── badges ─────────────────────────────── */
+
+/* The "this is live" marker. Its whole job is to answer the reflex that a smooth demo is a video. */
+#demo-live {
+  position: fixed; top: 14px; right: 16px; z-index: 9100;
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 14px 7px 11px; border-radius: 999px;
+  background: rgba(7, 10, 18, .82); color: var(--demo-ink);
+  border: 1px solid rgba(255, 255, 255, .16);
+  font-family: system-ui, sans-serif; font-size: .76rem; font-weight: 650; letter-spacing: .04em;
+  backdrop-filter: blur(8px);
+  opacity: 0; transition: opacity .4s ease;
+}
+#demo-live.visible { opacity: 1; }
+#demo-live .dot {
+  width: 8px; height: 8px; border-radius: 50%; background: #ff5d73;
+  animation: demo-pulse 1.6s ease-in-out infinite;
+}
+@keyframes demo-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+
+/* A transient note pinned near the top, for facts the narration states and the UI cannot show. */
+#demo-note {
+  position: fixed; top: 62px; left: 50%; transform: translateX(-50%) translateY(-8px);
+  z-index: 9100; max-width: min(760px, 92vw);
+  padding: 12px 20px; border-radius: 14px;
+  background: rgba(7, 10, 18, .93); color: var(--demo-ink);
+  border: 1px solid rgba(231, 154, 198, .35);
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: .92rem;
+  text-align: center; line-height: 1.5;
+  opacity: 0; pointer-events: none; transition: opacity .3s ease, transform .3s ease;
+}
+#demo-note.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+@media (prefers-reduced-motion: reduce) {
+  #demo-cursor, .demo-ripple, #demo-live .dot { animation: none !important; transition: none !important; }
+}

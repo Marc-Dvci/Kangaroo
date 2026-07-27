@@ -1,0 +1,55 @@
+{
+  "voice": "en-GB-RyanNeural",
+  "total_seconds": 113.88,
+  "beats": [
+    {
+      "file": "01-problem.mp3",
+      "index": 1,
+      "slug": "problem",
+      "seconds": 15.072,
+      "text": "Two point three million newborns die within a month of birth. Almost all of it preventable. The bottleneck is not medicine — it is noticing in time. And the people positioned to notice are offline."
+    },
+    {
+      "file": "02-parent.mp3",
+      "index": 2,
+      "slug": "parent",
+      "seconds": 17.952,
+      "text": "This is Kangaroo — one Java process, and everything here is the real application computing live. Parent mode: plain words, a tap-to-count for breathing, one photograph. And note what it never says: it never says the baby is fine."
+    },
+    {
+      "file": "03-health-worker.mp3",
+      "index": 3,
+      "slug": "health-worker",
+      "seconds": 19.512,
+      "text": "Same engine, different front door. The full W H O danger-sign assessment. Sixty-two breaths a minute — the threshold is sixty. So, a referral. And the letter is already written, because a health worker with no signal cannot come back for it."
+    },
+    {
+      "file": "04-the-sensors.mp3",
+      "index": 4,
+      "slug": "the-sensors",
+      "seconds": 18.384,
+      "text": "Three sensors, all already in the phone. The camera grades jaundice by extent. The microphone measures the cry, its pitch computed on the device. And the camera counts breathing a second time — when the two disagree, that is what gets reported."
+    },
+    {
+      "file": "05-the-safety-argument.mp3",
+      "index": 5,
+      "slug": "the-safety-argument",
+      "seconds": 16.032,
+      "text": "Every finding says where it came from. Measured, or reported — not the same evidence. And no model writes a number. The milligrams come from a W H O table, through arithmetic you can check by hand."
+    },
+    {
+      "file": "06-java-26.mp3",
+      "index": 6,
+      "slug": "java-26",
+      "seconds": 16.68,
+      "text": "All of it is Java 26. Ten J E Ps, and the application serves that table itself. Structured concurrency, lazy constants, the Vector API — that benchmark is measuring this machine, right now."
+    },
+    {
+      "file": "07-close.mp3",
+      "index": 7,
+      "slug": "close",
+      "seconds": 10.248,
+      "text": "A phone you already own. A sheet of paper. It works with the cable pulled out, it never goes dark — and it is all Java."
+    }
+  ]
+}

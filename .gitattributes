@@ -18,3 +18,8 @@ testdata/*.tsv  -text
 *.jar       binary
 *.gguf      binary
 *.aot       binary
+
+# The committed demo narration. text=auto would almost certainly detect these correctly; saying so
+# explicitly costs a line and removes the "almost".
+*.mp3       binary
+*.wav       binary

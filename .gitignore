@@ -20,6 +20,10 @@ __pycache__/
 media/
 footage/
 
+# ...except the generated narration, which is committed on purpose: it is what makes the demo one
+# click on a machine with no Python and no network. Rebuild it with demo/generate-voiceover.py.
+!src/main/resources/web/demo/speech/*.mp3
+
 # Native inference libraries and models are not vendored. See README, "Optional: the on-device model".
 runtime/
 *.gguf
