@@ -22,6 +22,7 @@ const state = {
   breathStart: 0,
   cry: null,          // a data: URL holding a WAV, once one has been recorded
   crySeconds: 0,
+  motion: null,       // { signal: [...], fps } from the chest-motion capture
   result: null,
 };
 
@@ -221,6 +222,126 @@ function downscale(file, maxEdge) {
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('decode failed')); };
     img.src = url;
   });
+}
+
+/* ─────────────────────────────── chest motion ───────────────────────────────
+ *
+ * The camera as a second opinion on the respiratory rate, which is the hardest and most
+ * consequential measurement in the assessment: fifty-nine breaths a minute is normal and sixty is
+ * fast breathing, and the person counting is doing it at the end of a long day on a baby who will
+ * not stay still.
+ *
+ * What is sent is NOT video. Each frame is reduced here to a single number — how much the chest
+ * region changed since the previous frame — so what crosses the wire is a few hundred floats, no
+ * image of the infant leaves the device for this measurement, and the upload survives a village
+ * Wi-Fi. Java does the periodicity analysis on the trace.
+ *
+ * Ten frames a second: a newborn breathes at 0.5 to 1.2 Hz, and Nyquist puts the floor near 2.4.
+ */
+
+const MOTION_FPS = 10;
+const MOTION_SECONDS = 15;
+
+function setupChestMotion() {
+  const button = $('#motion-record');
+  const label = $('#motion-label');
+  const result = $('#motion-result');
+  const video = $('#motion-video');
+
+  let running = null;
+
+  button.addEventListener('click', async () => {
+    if (running) { stop(); return; }
+    try {
+      running = await start();
+    } catch (e) {
+      result.textContent = e && e.name === 'NotAllowedError'
+        ? 'Camera permission was refused. Counting by tapping works just as well.'
+        : 'This device could not use the camera here. Counting by tapping works just as well.';
+      running = null;
+    }
+  });
+
+  async function start() {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 320 }, height: { ideal: 240 } },
+    });
+    video.srcObject = stream;
+    video.hidden = false;
+    await video.play();
+
+    // 64x48 is plenty: this measures how much a region changed, not what is in it.
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 48;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+    const signal = [];
+    let previous = null;
+
+    button.classList.add('recording');
+    label.textContent = 'Stop';
+    result.textContent = '';
+
+    const started = Date.now();
+    const tick = setInterval(() => {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const frame = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+
+      // Mean absolute luminance difference over the central region, where the chest is.
+      let sum = 0;
+      let n = 0;
+      for (let y = canvas.height >> 2; y < (canvas.height * 3) >> 2; y++) {
+        for (let x = canvas.width >> 2; x < (canvas.width * 3) >> 2; x++) {
+          const i = (y * canvas.width + x) * 4;
+          const luma = 0.299 * frame[i] + 0.587 * frame[i + 1] + 0.114 * frame[i + 2];
+          if (previous) sum += Math.abs(luma - previous[n]);
+          n++;
+        }
+      }
+      const current = new Float32Array(n);
+      let k = 0;
+      for (let y = canvas.height >> 2; y < (canvas.height * 3) >> 2; y++) {
+        for (let x = canvas.width >> 2; x < (canvas.width * 3) >> 2; x++) {
+          const i = (y * canvas.width + x) * 4;
+          current[k++] = 0.299 * frame[i] + 0.587 * frame[i + 1] + 0.114 * frame[i + 2];
+        }
+      }
+      if (previous) signal.push(sum / n);
+      previous = current;
+
+      const elapsed = (Date.now() - started) / 1000;
+      label.textContent = `Stop (${Math.max(0, MOTION_SECONDS - elapsed).toFixed(0)}s)`;
+      if (elapsed >= MOTION_SECONDS) stop();
+    }, 1000 / MOTION_FPS);
+
+    return { stream, tick, signal, started };
+  }
+
+  function stop() {
+    if (!running) return;
+    const { stream, tick, signal, started } = running;
+    running = null;
+
+    clearInterval(tick);
+    stream.getTracks().forEach(t => t.stop());
+    video.hidden = true;
+    video.srcObject = null;
+    button.classList.remove('recording');
+
+    const seconds = (Date.now() - started) / 1000;
+    if (signal.length < MOTION_FPS * 8) {
+      label.textContent = 'Watch the chest';
+      result.textContent = 'That was too short. Hold the camera on the chest for about fifteen seconds.';
+      return;
+    }
+
+    state.motion = { signal, fps: signal.length / seconds };
+    button.classList.add('has-data');
+    label.textContent = 'Captured';
+    result.textContent = 'Captured. The breathing rate will be measured on this device.';
+    updateSteps();
+  }
 }
 
 /* ─────────────────────────────── reading it aloud ───────────────────────────────
@@ -533,6 +654,9 @@ function saveDraft() {
     intake_text: $('#intake').value,
     respiratory_rate: $('#respiratory_rate').value,
     privacy_local: $('#privacy_local').checked,
+    // The motion trace and the cry deliberately stay out of the draft. The draft is written on
+    // every keystroke, and a few hundred floats plus a WAV would burn the localStorage quota to
+    // persist two captures that take fifteen seconds to redo.
   };
   try { localStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch { /* private mode */ }
 }
@@ -574,6 +698,7 @@ async function submit(event) {
     intake_text: $('#intake').value,
     respiratory_rate: $('#respiratory_rate').value === '' ? -1 : Number($('#respiratory_rate').value),
     privacy_local: $('#privacy_local').checked,
+    ...(state.motion ? { chest_motion: state.motion } : {}),
     locale: currentLocale(),
     captures: [
       ...[...state.captures].map(([kind, data]) => ({ kind, media_type: 'image/jpeg', data })),
@@ -621,6 +746,24 @@ function renderResult(r) {
 
   $('#narrative').textContent = r.narrative?.trim() || 'No further guidance was generated.';
   setupSpeech(r);
+
+  const motionCard = $('#motion-card-result');
+  if (r.chest_motion) {
+    const m = r.chest_motion;
+    motionCard.hidden = false;
+    // When both numbers exist, the disagreement is the finding, so it is stated first.
+    $('#motion-findings').innerHTML = m.measured && m.counted_per_minute !== undefined
+      ? `<p><strong>${m.agrees ? 'The count and the camera agree.' : 'The count and the camera disagree.'}</strong></p>
+         <p>Counted by hand: ${m.counted_per_minute} per minute.
+            Measured from chest movement: ${Math.round(m.rate_per_minute)} per minute.</p>
+         <p class="muted small">${m.agrees
+              ? 'Two independent measurements of the hardest number in this assessment.'
+              : 'Count again before acting on either. The threshold for fast breathing is 60.'}</p>`
+      : `<p>${escapeHtml(m.summary)}</p>
+         <p class="muted small">Measured on this device from chest movement. No video was sent.</p>`;
+  } else {
+    motionCard.hidden = true;
+  }
 
   const cryCard = $('#cry-card-result');
   if (r.cry) {
@@ -854,6 +997,7 @@ function init() {
   $('#print-btn').addEventListener('click', () => window.print());
   $('#bench-btn').addEventListener('click', runBench);
   setupCry();
+  setupChestMotion();
 
   // Voices arrive asynchronously on most platforms, so a result rendered before they load would
   // hide the button forever.

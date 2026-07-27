@@ -57,7 +57,7 @@ Dependencies point downward only. `core` knows about nothing; `app` knows about 
       │                                                                  │
       │   Visual pass        Audio pass      Vitals pass    History pass │
       │   decode frame       decode WAV      text + vitals  trend across │
-      │   colour pipeline    pitch, voicing  extraction     prior visits │
+      │   colour pipeline    pitch, voicing  chest motion   prior visits │
       │   Kramer zones       refuse if unclear                           │
       │        │                  │              │              │        │
       └────────┴──────────────────┴──────────────┴──────────────┘        │

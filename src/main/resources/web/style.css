@@ -152,6 +152,7 @@ main {
   /* The recording indicator still has to read as "recording" without the pulse, which is why the
      dot also changes colour and shape rather than only blinking. */
   .cry-record.recording .cry-dot { animation: none; }
+  .motion-record.recording .motion-dot { animation: none; }
 }
 
 .lede { color: var(--ink-soft); margin: 0 0 1.5rem; }
@@ -269,6 +270,23 @@ input:focus-visible, textarea:focus-visible, button:focus-visible, select:focus-
 
 .breath-meta { flex: 1 1 8rem; display: flex; flex-direction: column; gap: .5rem; align-items: flex-start; }
 .breath-timer { font-size: 1.3rem; font-weight: 640; font-variant-numeric: tabular-nums; }
+
+/* ─────────────────────────────── chest motion ─────────────────────────────── */
+
+.rule { border: 0; border-top: 1px solid var(--line); margin: 1.2rem 0; }
+
+.motion { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.motion-record { display: inline-flex; align-items: center; gap: .6rem; }
+.motion-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--ink-faint); flex: 0 0 auto; }
+.motion-record.recording { border-color: var(--red); }
+.motion-record.recording .motion-dot { background: var(--red); animation: cry-pulse 1s ease-in-out infinite; }
+.motion-record.has-data { border-color: var(--green); }
+.motion-record.has-data .motion-dot { background: var(--green); border-radius: 3px; }
+
+.motion-video {
+  width: 132px; aspect-ratio: 4 / 3; border-radius: 10px;
+  border: 1.5px solid var(--line); object-fit: cover; background: #000;
+}
 
 /* ─────────────────────────────── the cry recording ─────────────────────────────── */
 

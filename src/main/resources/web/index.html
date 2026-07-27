@@ -131,6 +131,23 @@
           </div>
         </div>
         <input type="hidden" name="respiratory_rate" id="respiratory_rate" value="">
+
+        <hr class="rule">
+        <p class="hint">
+          Optional: point the camera at the baby's chest for fifteen seconds and Kangaroo will
+          measure the rate itself, as a second opinion on the count.
+        </p>
+        <div class="motion">
+          <button type="button" class="ghost motion-record" id="motion-record">
+            <span class="motion-dot" aria-hidden="true"></span>
+            <span id="motion-label">Watch the chest</span>
+          </button>
+          <video id="motion-video" class="motion-video" hidden muted playsinline></video>
+        </div>
+        <p class="muted small" id="motion-result" aria-live="polite"></p>
+        <p class="muted small">
+          No video is sent or stored. Each frame becomes a single movement number on this device.
+        </p>
       </fieldset>
 
       <fieldset class="card">
@@ -213,6 +230,11 @@
         </button>
       </div>
       <div class="narrative" id="narrative"></div>
+    </div>
+
+    <div class="card" id="motion-card-result" hidden>
+      <h2>Breathing rate</h2>
+      <div id="motion-findings"></div>
     </div>
 
     <div class="card" id="cry-card-result" hidden>

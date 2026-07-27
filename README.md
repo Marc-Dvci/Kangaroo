@@ -63,6 +63,10 @@ engine that will terrify them, or a phone call they feel guilty making. Parent m
 ### Health-worker mode — the WHO IMNCI young-infant assessment
 
 - Seven guided captures, a counted respiratory rate, a ten-second cry recording, and structured intake.
+- **The camera as a second opinion on the breathing rate.** Fifteen seconds pointed at the chest
+  measures the rate independently of the count — and when the two disagree, that disagreement is
+  reported rather than silently resolved. No video is sent: each frame becomes one movement number
+  on the device, so a few hundred floats travel where a video would not.
 - The full **WHO IMNCI danger-sign classification** with a red/amber/green result and every finding
   traced back to the words that produced it.
 - **Five deterministic clinical tools**: weight-for-age z-score, medication dosing with hard
@@ -579,6 +583,7 @@ The rest of the boundary is drawn deliberately, and each line is engineered rath
 |---|---|
 | The colorimetric jaundice head is the softest signal in the system (55.5% held-out severity accuracy across five grades) | It never decides alone, it can refuse to grade, and it enters the rule as one sign among many. The design choices that make it robust across skin tone — extent over intensity, a reference card, palms and soles, refusal — are set out in [docs/fairness.md](docs/fairness.md), along with the study that would put a number on it. |
 | Kramer zone banding assumes a head-to-toe capture with the infant upright in shot | When the assumption does not hold the zones agree with each other and the result lands at zone 1, the conservative answer. |
+| The chest-motion rate is a second opinion, not a replacement | A counted rate always wins when one exists; the camera fills in only when nobody counted. Irregular movement is refused rather than turned into a number, and a disagreement between the two is surfaced instead of resolved. |
 | The cry analysis measures the recording; it does not diagnose from it | It reports fundamental frequency and phonation, may only escalate, and refuses a clip it cannot read. Crucially, a recording with **no crying in it** is a refusal rather than an "absent cry": a sleeping healthy newborn and one too sick to cry produce the same audio, and only a person who has tried to rouse the baby can tell them apart. |
 | Interface catalogues ship in English and French | All twelve languages drive the model-generated action plan, which is the part a caregiver reads. The remaining interface catalogues are staged for native-speaker review before release — see [docs/i18n.md](docs/i18n.md). |
 | The benchmark harness is a timing loop, not JMH | It warms up and reports the best of seven batches, which resolves the difference this comparison has. `GET /api/bench` re-measures it on your hardware rather than asking you to take the table on trust. |
@@ -598,6 +603,7 @@ kangaroo/
     ml/          GBM engine · abstention · feature extraction
     color/       colorimetry · Kramer zones · Vector API · benchmark
     audio/       WAV decoding · cry acoustics — pitch, phonation, refusal
+    motion/      respiratory rate from a chest-motion trace
     infer/       sealed InferenceEngine · native · OpenAI-compatible · deterministic · failover
     ffm/llama/   FFM bindings — libllama + mtmd, no JNI
     orchestrate/ StructuredTaskScope assessment pipeline

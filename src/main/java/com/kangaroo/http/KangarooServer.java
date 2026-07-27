@@ -16,6 +16,7 @@ import com.kangaroo.crypto.DeviceIdentity;
 import com.kangaroo.ffm.NativeRuntime;
 import com.kangaroo.i18n.Messages;
 import com.kangaroo.ml.Models;
+import com.kangaroo.motion.RespiratoryMotion;
 import com.kangaroo.orchestrate.AssessmentOrchestrator;
 import com.kangaroo.store.EncounterStore;
 import com.kangaroo.store.PatientMemory;
@@ -192,12 +193,13 @@ public final class KangarooServer implements AutoCloseable {
         }
 
         Json.Obj body = Http.readJson(exchange);
-        Encounter encounter = parseEncounter(body);
+        RespiratoryMotion.Result motion = parseChestMotion(body);
+        Encounter encounter = parseEncounter(body, motion);
 
         Assessment assessment = orchestrator.assess(encounter);
         store.save(encounter, assessment);
 
-        Http.json(exchange, 200, toJson(encounter, assessment));
+        Http.json(exchange, 200, toJson(encounter, assessment, motion));
     }
 
     /** The five deterministic WHO tools, as an API and as OpenAI-shaped definitions. */
@@ -331,15 +333,45 @@ public final class KangarooServer implements AutoCloseable {
 
     // ------------------------------------------------------------------ parsing and rendering
 
-    private Encounter parseEncounter(Json.Obj body) {
+    /**
+     * The chest-motion trace, when the client captured one.
+     *
+     * <p>Deliberately not video. The client reduces each frame to one number -- how much the chest
+     * region moved since the last frame -- so what crosses the wire is a few hundred floats and no
+     * image of the infant. The periodicity of that trace is the breathing rate.
+     */
+    private RespiratoryMotion.Result parseChestMotion(Json.Obj body) {
+        return body.field("chest_motion")
+                .flatMap(Json::asObj)
+                .map(m -> RespiratoryMotion.analyse(
+                        m.array("signal").stream()
+                                .map(Json::asDouble)
+                                .flatMap(java.util.Optional::stream)
+                                .mapToDouble(Double::doubleValue)
+                                .toArray(),
+                        m.field("fps").flatMap(Json::asDouble).orElse(0.0)))
+                .orElse(null);
+    }
+
+    private Encounter parseEncounter(Json.Obj body, RespiratoryMotion.Result motion) {
         Subject subject = new Subject(
                 body.intAt("age_days", Subject.UNKNOWN_AGE),
                 body.field("weight_kg").flatMap(Json::asDouble).orElse(Subject.UNKNOWN_WEIGHT),
                 Sex.parse(body.str("sex", "male")),
                 body.bool("preterm", false));
 
+        int tappedRate = body.intAt("respiratory_rate", Vitals.ABSENT_INT);
+
+        // A counted rate is what the protocol asks for, so it wins when it is present. The camera
+        // fills in only when nobody counted, and the two are reported side by side either way --
+        // a disagreement between them is worth more than either number alone.
+        int respiratoryRate = tappedRate;
+        if (respiratoryRate <= 0 && motion != null && motion.measuredOk()) {
+            respiratoryRate = (int) Math.round(motion.measured().orElseThrow());
+        }
+
         Vitals vitals = new Vitals(
-                body.intAt("respiratory_rate", Vitals.ABSENT_INT),
+                respiratoryRate,
                 body.field("temperature_c").flatMap(Json::asDouble).orElse(Vitals.ABSENT_DOUBLE),
                 body.intAt("spo2", Vitals.ABSENT_INT),
                 body.intAt("heart_rate", Vitals.ABSENT_INT));
@@ -377,7 +409,8 @@ public final class KangarooServer implements AutoCloseable {
                 body.bool("privacy_local", false));
     }
 
-    private Json.Obj toJson(Encounter encounter, Assessment assessment) {
+    private Json.Obj toJson(Encounter encounter, Assessment assessment,
+                            RespiratoryMotion.Result motion) {
         List<Json> signs = assessment.signs().stream()
                 .map(s -> (Json) Json.obj()
                         .put("sign", s.sign().name())
@@ -414,6 +447,25 @@ public final class KangarooServer implements AutoCloseable {
                 .putIfPresent("refusal_reason", g.refusalReason())
                 .put("zones", Json.arr(g.kramerZones().stream().map(Json::of).toList()))
                 .build()));
+
+        if (motion != null) {
+            var m = Json.obj()
+                    .put("measured", motion.measuredOk())
+                    .put("summary", motion.summary())
+                    .put("periodicity", motion.periodicity())
+                    .put("seconds", motion.seconds());
+            motion.measured().ifPresent(rate -> m.put("rate_per_minute", rate));
+            // Both numbers, side by side. A camera and a person disagreeing about the hardest
+            // measurement in the assessment is exactly the thing a supervisor wants to see.
+            int counted = encounter.vitals().respiratoryRate();
+            motion.measured().ifPresent(rate -> {
+                if (counted > 0) {
+                    m.put("counted_per_minute", counted);
+                    m.put("agrees", Math.abs(counted - rate) <= 8);
+                }
+            });
+            builder.put("chest_motion", m.build());
+        }
 
         assessment.cry().ifPresent(c -> builder.put("cry", Json.obj()
                 .put("graded", c.graded())
