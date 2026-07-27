@@ -1,5 +1,7 @@
 # Kangaroo
 
+[![build](https://github.com/Marc-Dvci/Kangaroo/actions/workflows/build.yml/badge.svg)](https://github.com/Marc-Dvci/Kangaroo/actions/workflows/build.yml)
+
 **An offline newborn-watch platform for parents and community health workers, built entirely in Java 26.**
 
 Two point three million newborns die within twenty-eight days of birth. Three quarters of them in
@@ -390,18 +392,24 @@ writing the tests this way:
 
 ## Building from source
 
-**Requires JDK 26.** Nothing else — no Node, no npm, no Python, no Docker. The web client is
-hand-written and served from the JAR; adding a JavaScript toolchain would mean a second build and a
-second thing that can rot.
+**Requires JDK 26.** Nothing else — no Node, no npm, no Python, no Docker, and no Maven install
+(`mvnw` fetches it). The web client is hand-written and served from the JAR; adding a JavaScript
+toolchain would mean a second build and a second thing that can rot.
 
 ```bash
 ./mvnw package          # compile, test, jar
 ./mvnw test             # tests only
 ```
 
-`mvnw`/`mvnw.ps1` pin the exact JDK 26 build the project is verified against, so a stray `JAVA_HOME`
-cannot silently build against an older release. With your own JDK 26 and Maven, plain `mvn package`
-works too.
+**Do not have Java 26 yet?** Most people do not. This unpacks a Temurin build into `./.jdk` and
+prints the one line to run. Nothing is installed system-wide:
+
+```bash
+./packaging/fetch-jdk26.sh
+```
+
+If you build with an older JDK the enforcer rule in `pom.xml` stops you with a clear message rather
+than failing somewhere confusing later.
 
 ### Verifying Java 26
 
